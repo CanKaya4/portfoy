@@ -36,7 +36,7 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Romantik Karşılama Animasyonları - YENİ VE UZUN */
+    /* Romantik Karşılama Animasyonları */
     @keyframes floatUp {
       0% { transform: translateY(110vh) rotate(0deg) scale(0.8); opacity: 0; }
       10% { opacity: 1; }
@@ -50,7 +50,6 @@
       z-index: 101;
     }
 
-    /* Uçan Kelebek Animasyonu */
     @keyframes flutter {
       0% { transform: translateY(110vh) translateX(0) rotate(0deg); opacity: 0; }
       10% { opacity: 1; }
@@ -73,7 +72,6 @@
       animation: heartPulse 2.5s infinite ease-in-out;
     }
 
-    /* Slayt Geçiş Animasyonu */
     .slide-fade {
       animation: slideFade 3.5s ease-in-out forwards;
     }
@@ -93,7 +91,6 @@
       animation: fadeOutScreen 14.5s forwards;
     }
 
-    /* Toast Animasyonu */
     @keyframes slideUp {
       from { transform: translateY(100%); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
@@ -111,8 +108,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    // initializeFirestore eklendi (Adblock bypass için)
-    import { initializeFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // getFirestore'a geri dönüldü, Long Polling kaldırıldı.
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCXXP89y1yy9zBzvd7zeh7cWxCIrtegTpg",
@@ -125,12 +122,8 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
-
-    // DİKKAT: Adblocker ve Brave kalkanlarının ERR_BLOCKED_BY_CLIENT hatasını aşmak için Long Polling zorunlu kılındı.
-    const db = initializeFirestore(app, {
-      experimentalForceLongPolling: true
-    });
 
     window.firebaseApp = { 
         auth, db, signInWithPopup, provider, onAuthStateChanged, signOut, 
@@ -146,12 +139,12 @@
     // --- BİLDİRİM (TOAST) BİLEŞENİ ---
     const Toast = ({ message, type, onClose }) => {
       useEffect(() => {
-        const timer = setTimeout(() => onClose(), 3500);
+        const timer = setTimeout(() => onClose(), 4000);
         return () => clearTimeout(timer);
       }, [onClose]);
 
-      const colors = type === 'error' ? 'bg-rose-600' : 'bg-emerald-600';
-      const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+      const colors = type === 'error' ? 'bg-rose-600' : (type === 'warning' ? 'bg-amber-500' : 'bg-emerald-600');
+      const icon = type === 'error' ? 'fa-circle-exclamation' : (type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check');
 
       return (
         <div className="fixed bottom-20 md:bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-sm toast-animate">
@@ -195,12 +188,9 @@
 
       useEffect(() => {
         if (!isOpen) return;
-        
-        // 4 slayt, her biri 3.5 saniye ekranda kalacak
         const interval = setInterval(() => {
           setSlideIndex(prev => prev + 1);
         }, 3500);
-
         return () => clearInterval(interval);
       }, [isOpen]);
 
@@ -213,7 +203,6 @@
         "Portföyüne hoş geldin... ✨"
       ];
 
-      // Rastgele kelebekler ve çiçekler
       const effects = useMemo(() => {
         const items = [];
         const icons = ['🌸', '🌺', '🌷', '🦋', '🦋', '✨', '💖', '💐'];
@@ -234,14 +223,12 @@
 
       return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-50 to-rose-100 romantic-screen overflow-hidden">
-          
           {effects.map(e => (
             <div key={e.id} className={e.isButterfly ? "butterfly" : "flower-anim"} 
                  style={{ left: e.left, animationDuration: e.duration, animationDelay: e.delay, fontSize: e.size }}>
               {e.icon}
             </div>
           ))}
-
           <div className="relative z-[102] w-full max-w-lg px-6 flex flex-col items-center">
              {slides.map((text, idx) => (
                 slideIndex === idx && (
@@ -270,17 +257,14 @@
       const [activeTab, setActiveTab] = useState('dashboard');
       const [toast, setToast] = useState(null);
       const [selectedReport, setSelectedReport] = useState(null);
+      const [isSaving, setIsSaving] = useState(false); // Kaydet Butonu Yükleniyor Animasyonu
 
-      // Romantik Karşılama State'i
       const [showRomanticGreeting, setShowRomanticGreeting] = useState(false);
       const [hasGreeted, setHasGreeted] = useState(false);
 
-      // Canlı Piyasa Verileri
       const [marketData, setMarketData] = useState({ usd: null, eur: null, gold: null, interest: 50.0 });
 
-      // Form State (Boşlukları destekler)
       const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
-      
       const [mmfInvested, setMmfInvested] = useState('');
       const [mmfCurrent, setMmfCurrent] = useState('');
       const [goldInvested, setGoldInvested] = useState('');
@@ -291,25 +275,21 @@
 
       const showToast = (message, type = 'success') => setToast({ message, type });
 
-      // 1. Firebase Başlatma
       useEffect(() => {
         const handleReady = () => setIsFirebaseReady(true);
         window.addEventListener('firebase-ready', handleReady);
         return () => window.removeEventListener('firebase-ready', handleReady);
       }, []);
 
-      // 2. Canlı Piyasa Verilerini Çekme (Türkiye Piyasası)
       useEffect(() => {
         const fetchRates = async () => {
           try {
             const resUsd = await fetch('https://api.frankfurter.app/latest?from=USD&to=TRY');
             const dataUsd = await resUsd.json();
-            
             const resEur = await fetch('https://api.frankfurter.app/latest?from=EUR&to=TRY');
             const dataEur = await resEur.json();
 
             let goldPrice = null;
-            
             try {
               const goldRes = await fetch('https://api.codetabs.com/v1/proxy?quest=https://api.genelpara.com/embed/altin.json');
               if (goldRes.ok) {
@@ -329,7 +309,6 @@
         fetchRates();
       }, []);
 
-      // 3. Oturum Kontrolü
       useEffect(() => {
         if (!isFirebaseReady) return;
         const { auth, onAuthStateChanged } = window.firebaseApp;
@@ -337,47 +316,51 @@
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
           setUser(currentUser);
           
-          // Eşin (Aleyna) için özel romantik kontrol
           if (currentUser && currentUser.email === 'aleynaerdn2294@gmail.com' && !hasGreeted) {
             setShowRomanticGreeting(true);
             setHasGreeted(true);
-            // Animasyon 14.5 saniye sürecek
-            setTimeout(() => {
-              setShowRomanticGreeting(false);
-            }, 14500); 
+            setTimeout(() => setShowRomanticGreeting(false), 14500); 
           }
-
           if(!currentUser) setLoading(false);
         });
         return () => unsubscribe();
       }, [isFirebaseReady, hasGreeted]);
 
-      // 4. Verileri Dinleme
+      // Veritabanı Dinleme (Sonsuz yüklemeyi önleyen Timeout eklendi)
       useEffect(() => {
         if (!isFirebaseReady || !user) return;
         const { db, collection, onSnapshot } = window.firebaseApp;
         
+        // Eğer 6 saniye içinde veri gelmezse "Sistem Hazırlanıyor" ekranını zorla kapat
+        const fallbackTimer = setTimeout(() => {
+          if (loading) {
+            setLoading(false);
+            showToast("Bağlantı yavaş. Tarayıcınızda (Brave/AdBlock) güvenlik kalkanı açık olabilir.", "warning");
+          }
+        }, 6000);
+
         const colRef = collection(db, 'portfoy_kayitlari_v2');
-        
         const unsubscribe = onSnapshot(colRef, (snapshot) => {
+          clearTimeout(fallbackTimer);
           const data = snapshot.docs.map(doc => doc.data());
           setEntries(data.filter(d => d.type === 'entry'));
           setLoading(false);
         }, (error) => {
-          // ERR_BLOCKED_BY_CLIENT hatası sessizce yutulabilir, long polling kurtarmaya çalışacaktır.
-          console.error("Veri okuma engeli/hatası:", error);
+          clearTimeout(fallbackTimer);
           setLoading(false);
+          console.error("Firebase Snapshot Error:", error);
         });
 
-        return () => unsubscribe();
+        return () => {
+          clearTimeout(fallbackTimer);
+          unsubscribe();
+        };
       }, [isFirebaseReady, user]);
 
-      // --- GİRİŞ & ÇIKIŞ İŞLEMLERİ ---
       const handleLogin = async () => {
         try {
           const { auth, provider, signInWithPopup } = window.firebaseApp;
           await signInWithPopup(auth, provider);
-          showToast("Başarıyla giriş yapıldı!");
         } catch (error) {
           if (error.code !== 'auth/popup-closed-by-user') {
              showToast(`Giriş hatası: ${error.message}`, "error");
@@ -396,7 +379,6 @@
         }
       };
 
-      // --- HESAPLAMALAR ---
       const sortedEntries = useMemo(() => {
         return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
       }, [entries]);
@@ -433,10 +415,7 @@
         const fxRatio = totalCurrent > 0 ? ((latestEntry.fxCurrent || 0) / totalCurrent) * 100 : 0;
         const stockRatio = totalCurrent > 0 ? (((latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0)) / totalCurrent) * 100 : 0;
 
-        return { 
-            totalInvested, totalCurrent, totalProfit, totalProfitPercent, weeklyChangeTry,
-            mmfRatio, goldRatio, fxRatio, stockRatio
-        };
+        return { totalInvested, totalCurrent, totalProfit, totalProfitPercent, weeklyChangeTry, mmfRatio, goldRatio, fxRatio, stockRatio };
       };
 
       const stats = getStats();
@@ -446,17 +425,16 @@
         return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: decimals }).format(value || 0);
       };
 
-      // --- FORM İŞLEMLERİ ---
       const handleAddStock = () => setStocks([...stocks, { id: Date.now(), name: '', invested: '', current: '' }]);
       const handleRemoveStock = (id) => setStocks(stocks.filter(s => s.id !== id));
       const handleStockChange = (id, field, value) => setStocks(stocks.map(s => s.id === id ? { ...s, [field]: value } : s));
 
+      // KAYDETME İŞLEMİ (Tepkisiz kalmayı çözen yapı)
       const handleSaveEntry = async (e) => {
         e.preventDefault();
-        if (!user) {
-          showToast("Oturum süresi dolmuş. Lütfen tekrar giriş yapın.", "error");
-          return;
-        }
+        if (!user) return;
+        
+        setIsSaving(true); // Buton animasyonunu başlat
         
         const { db, doc, setDoc } = window.firebaseApp;
         const entryId = Date.now().toString();
@@ -465,40 +443,35 @@
 
         const newEntry = {
           id: docIdToSave, type: 'entry', date,
-          mmfInvested: Number(mmfInvested) || 0, 
-          mmfCurrent: Number(mmfCurrent) || 0,
-          goldInvested: Number(goldInvested) || 0, 
-          goldCurrent: Number(goldCurrent) || 0,
-          fxInvested: Number(fxInvested) || 0, 
-          fxCurrent: Number(fxCurrent) || 0,
+          mmfInvested: Number(mmfInvested) || 0, mmfCurrent: Number(mmfCurrent) || 0,
+          goldInvested: Number(goldInvested) || 0, goldCurrent: Number(goldCurrent) || 0,
+          fxInvested: Number(fxInvested) || 0, fxCurrent: Number(fxCurrent) || 0,
           stocks: stocks.map(s => ({ 
-              ...s, 
-              name: s.name || 'İsimsiz Hisse',
-              invested: Number(s.invested) || 0, 
-              current: Number(s.current) || 0 
+              ...s, name: s.name || 'İsimsiz Hisse',
+              invested: Number(s.invested) || 0, current: Number(s.current) || 0 
           }))
         };
 
         try {
-          // Engellemelere karşı Promise.race ile Zaman Aşımı (Timeout) kontrolü eklendi
+          // Eğer tarayıcı engelliyorsa sonsuza kadar beklemesin diye 6 Saniyelik Timeout
           const savePromise = setDoc(doc(db, 'portfoy_kayitlari_v2', docIdToSave), newEntry);
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 6000));
           
           await Promise.race([savePromise, timeoutPromise]);
           
           setActiveTab('dashboard');
           showToast("Haftalık değerlendirme başarıyla kaydedildi! 🚀");
           
-          setMmfInvested(''); setMmfCurrent('');
-          setGoldInvested(''); setGoldCurrent('');
-          setFxInvested(''); setFxCurrent('');
-          setStocks([]);
+          setMmfInvested(''); setMmfCurrent(''); setGoldInvested(''); setGoldCurrent('');
+          setFxInvested(''); setFxCurrent(''); setStocks([]);
         } catch (error) {
           if(error.message === "TIMEOUT") {
-             showToast("Reklam engelleyiciniz (AdBlock) kaydetmeyi engelliyor olabilir. Ayarları kontrol edin.", "error");
+             showToast("Hata: Kayıt ulaştırılamadı! Brave kalkanlarını veya reklam engelleyicinizi bu sayfa için kapatmalısınız.", "error");
           } else {
              showToast('Kayıt başarısız: ' + error.message, "error");
           }
+        } finally {
+          setIsSaving(false); // Buton animasyonunu bitir
         }
       };
 
@@ -515,33 +488,26 @@
         }
       };
 
-      // --- RAPOR İÇERİKLERİ ---
       const showReport = (type) => {
         if (!stats || sortedEntries.length < 2) {
-            showToast("Detaylı analiz için en az 2 haftalık veri girmelisiniz.", "error");
+            showToast("Detaylı analiz için en az 2 haftalık veri girmelisiniz.", "warning");
             return;
         }
 
-        let content = "";
-        let title = "";
-        let icon = "";
-
+        let content = "", title = "", icon = "";
         const oldestEntry = sortedEntries[sortedEntries.length - 1];
         const monthsPassed = Math.max(1, (new Date(latestEntry.date) - new Date(oldestEntry.date)) / (1000 * 60 * 60 * 24 * 30));
 
         switch(type) {
             case 'growth':
-                title = "Uzun Vadeli Büyüme Raporu";
-                icon = "fa-seedling";
-                const totalGrowth = stats.totalCurrent - (oldestEntry.mmfCurrent || 0); // Basitleştirilmiş
+                title = "Uzun Vadeli Büyüme Raporu"; icon = "fa-seedling";
                 const avgMonthlyGrowth = stats.totalProfit / monthsPassed;
                 content = `🎯 Toplamda yatırdığınız ana para: ${formatCurrency(stats.totalInvested)}\n💰 Güncel Ulaşılan Büyüklük: ${formatCurrency(stats.totalCurrent)}\n\n`;
                 content += `📈 Sizin disiplinli tasarrufunuz ve yatırımlarınız sayesinde portföyünüz net olarak ${formatCurrency(stats.totalProfit)} (%${stats.totalProfitPercent.toFixed(1)}) reel kâr elde etti.\n\n`;
                 content += `⏱️ Aylık Ortalama Kâr Hızınız: ${formatCurrency(avgMonthlyGrowth)} / Ay.\nBu ivmeyle devam ederseniz bileşik getiri gücüyle portföyünüz kartopu etkisi yaratacaktır.`;
                 break;
             case 'allocation':
-                title = "Stratejik Varlık Dağılımı";
-                icon = "fa-chart-pie";
+                title = "Stratejik Varlık Dağılımı"; icon = "fa-chart-pie";
                 content = `Portföyünüzün piyasa risklerine karşı duruşu:\n\n`;
                 content += `🛡️ Güvenli Liman (PPF & Mevduat): %${stats.mmfRatio.toFixed(1)}\n`;
                 content += `🌟 Değer Koruma (Altın): %${stats.goldRatio.toFixed(1)}\n`;
@@ -552,11 +518,10 @@
                 else content += "Yorum: Tebrikler! Çeşitlendirilmiş ve oldukça dengeli bir portföy yönetiyorsunuz.";
                 break;
             case 'inflation':
-                title = "Enflasyon ve Kur Analizi";
-                icon = "fa-shield-halved";
+                title = "Enflasyon ve Kur Analizi"; icon = "fa-shield-halved";
                 const currentUsdRate = marketData.usd || 34.0;
                 const portfolioInUsd = stats.totalCurrent / currentUsdRate;
-                const investedInUsd = stats.totalInvested / currentUsdRate; // Yaklaşık
+                const investedInUsd = stats.totalInvested / currentUsdRate;
                 const netUsdProfit = portfolioInUsd - investedInUsd;
                 content = `Mevcut Güncel Kur: ${currentUsdRate.toFixed(2)} ₺\n\n`;
                 content += `🌍 Global Satın Alma Gücünüz: ${formatCurrency(portfolioInUsd, 'USD')}\n\n`;
@@ -570,35 +535,26 @@
         setSelectedReport({ title, icon, content });
       };
 
-      // --- LOGIN EKRANI ---
       if (!loading && !user) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-            
             <div className="relative z-10 w-full max-w-md p-8 m-4 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl text-center border border-white/20">
               <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-emerald-400 rounded-3xl mx-auto flex items-center justify-center shadow-lg mb-6 transform rotate-12">
                 <i className="fa-solid fa-chart-line text-4xl text-white -rotate-12"></i>
               </div>
               <h1 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">Portföy<span className="text-indigo-600">Pro</span></h1>
               <p className="text-slate-500 font-medium mb-10">Ali & Aleyna - Finansal Özgürlük Paneli</p>
-              
-              <button 
-                onClick={handleLogin}
-                className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 font-bold py-4 px-6 rounded-2xl hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all shadow-sm active:scale-95"
-              >
+              <button onClick={handleLogin} className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 font-bold py-4 px-6 rounded-2xl hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all shadow-sm active:scale-95">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6" />
                 Google ile Giriş Yap
               </button>
-              
-              <p className="text-xs text-slate-400 mt-6 font-medium">Uçtan uca şifrelenmiş Firebase altyapısı ile güvendedir.</p>
             </div>
           </div>
         );
       }
 
-      // --- YÜKLEME EKRANI ---
       if (loading) {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
@@ -608,13 +564,10 @@
         );
       }
 
-      // --- ANA UYGULAMA ---
       return (
         <div className="max-w-md md:max-w-5xl mx-auto min-h-screen relative">
-          
           {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
           <ReportModal isOpen={selectedReport !== null} onClose={() => setSelectedReport(null)} {...selectedReport} />
-          
           <RomanticGreeting isOpen={showRomanticGreeting} />
 
           {/* APP HEADER */}
@@ -809,16 +762,13 @@
 
                 <form onSubmit={handleSaveEntry} className="space-y-8">
                   
-                  {/* Tarih */}
                   <div className="space-y-2">
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Değerlendirme Tarihi</label>
                     <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition font-bold text-slate-700" />
                   </div>
 
-                  {/* Varlık Kategorileri */}
                   <div className="space-y-4">
                       
-                      {/* PPF */}
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-piggy-bank text-emerald-500"></i> Para Piyasası / Mevduat</h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -833,7 +783,6 @@
                         </div>
                       </div>
 
-                      {/* Altın */}
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-coins text-amber-400"></i> Altın Fonları / Fiziksel</h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -848,7 +797,6 @@
                         </div>
                       </div>
 
-                      {/* Döviz */}
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-dollar-sign text-blue-500"></i> Döviz Fonları / Eurobond</h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -863,7 +811,6 @@
                         </div>
                       </div>
 
-                      {/* Hisse Senetleri */}
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
@@ -894,8 +841,9 @@
 
                   </div>
 
-                  <button type="submit" className="w-full bg-slate-900 text-white font-bold py-5 rounded-2xl shadow-xl hover:bg-slate-800 transition active:scale-95 text-lg flex justify-center items-center gap-2">
-                    <i className="fa-solid fa-cloud-arrow-up"></i> Verileri Güvenli Şekilde Kaydet
+                  <button type="submit" disabled={isSaving} className={`w-full text-white font-bold py-5 rounded-2xl shadow-xl transition active:scale-95 text-lg flex justify-center items-center gap-2 ${isSaving ? 'bg-indigo-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800'}`}>
+                    {isSaving ? <i className="fa-solid fa-spinner fa-spin text-xl"></i> : <i className="fa-solid fa-cloud-arrow-up"></i>}
+                    {isSaving ? 'Buluta Eşitleniyor...' : 'Verileri Güvenli Şekilde Kaydet'}
                   </button>
                 </form>
               </div>

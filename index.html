@@ -255,13 +255,13 @@
 
       if (!isOpen) return null;
 
-     
-      const slides = [
+       const slides = [
         "Hoşgeldin gülüm 🌸",
         "Seni sevdiğimi söylemiş miydim ? ☀️",
         "İyi ki varsın gülüm 🐱💖",
         "Seni her şeyinle seviyorum güzelim 💖🏡✨"
       ];
+
 
       return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-50 to-rose-100 romantic-screen overflow-hidden px-4">
@@ -288,6 +288,7 @@
       const [isFirebaseReady, setIsFirebaseReady] = useState(!!window.firebaseApp);
       const [user, setUser] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [isSavingAction, setIsSavingAction] = useState(false); // Genel buton koruması
       
       // Veritabanı State'leri
       const [entries, setEntries] = useState([]);
@@ -304,7 +305,7 @@
       const [activeTab, setActiveTab] = useState('dashboard');
       const [toast, setToast] = useState(null);
       const [selectedReport, setSelectedReport] = useState(null);
-      const [isSaving, setIsSaving] = useState(false);
+
       const [showRomanticGreeting, setShowRomanticGreeting] = useState(false);
       const [hasGreeted, setHasGreeted] = useState(false);
       
@@ -386,7 +387,7 @@
         return () => unsubscribe();
       }, [isFirebaseReady, hasGreeted]);
 
-      // VERİTABANI DİNLEME
+      // VERİTABANI DİNLEME (Sıralama Bug'ı Çözüldü: ID ve Date kullanılıyor)
       useEffect(() => {
         if (!isFirebaseReady || !user) return;
         const { db, collection, onSnapshot } = window.firebaseApp;
@@ -398,13 +399,15 @@
           const data = snapshot.docs.map(doc => doc.data());
           
           setEntries(data.filter(d => d.type === 'entry'));
-          setSalaries(data.filter(d => d.type === 'salary').sort((a,b) => new Date(b.date) - new Date(a.date)));
-          setExpenses(data.filter(d => d.type === 'expense').sort((a,b) => new Date(b.date) - new Date(a.date)));
-          setDebts(data.filter(d => d.type === 'debt').sort((a,b) => new Date(b.date) - new Date(a.date)));
-          setSubscriptions(data.filter(d => d.type === 'subscription').sort((a,b) => b.date.localeCompare(a.date))); 
+          // ÇÖZÜM: Aynı gün girilen kayıtları ID (Timestamp içerir) üzerinden sıralayarak en son girilenin daima 0. indekste olmasını garantiledik.
+          setSalaries(data.filter(d => d.type === 'salary').sort((a,b) => b.id.localeCompare(a.id)));
+          setExpenses(data.filter(d => d.type === 'expense').sort((a,b) => b.id.localeCompare(a.id)));
+          setDebts(data.filter(d => d.type === 'debt').sort((a,b) => b.id.localeCompare(a.id)));
+          setSubscriptions(data.filter(d => d.type === 'subscription').sort((a,b) => b.id.localeCompare(a.id))); 
+          
           setHouses(data.filter(d => d.type === 'house').sort((a,b) => b.price - a.price)); 
-          setDowryItems(data.filter(d => d.type === 'dowry').sort((a,b) => b.id - a.id));
-          setMediaItems(data.filter(d => d.type === 'media').sort((a,b) => b.id - a.id));
+          setDowryItems(data.filter(d => d.type === 'dowry').sort((a,b) => b.id.localeCompare(a.id)));
+          setMediaItems(data.filter(d => d.type === 'media').sort((a,b) => b.id.localeCompare(a.id)));
           setWishlist(data.filter(d => d.type === 'wishlist').sort((a,b) => b.priority - a.priority)); 
 
           const s = data.find(d => d.id === 'settings');
@@ -412,6 +415,7 @@
               setSettings(s); setEngDateInput(s.engagementDate || ''); setMarDateInput(s.marriageDate || '');
               setTargetAmountInput(s.targetAmount ? String(s.targetAmount).replace('.', ',') : '');
           }
+          
           setLoading(false);
         }, (error) => { clearTimeout(fallbackTimer); setLoading(false); });
         return () => { clearTimeout(fallbackTimer); unsubscribe(); };
@@ -456,9 +460,9 @@
 
           // Ana Sayfa Bütçe Grafiği Datası
           const budgetChartData = [
-              { name: 'Kalan Nakit', value: Math.max(0, remainingSalary) },
-              { name: 'Sabit Çıkışlar (Borç+Abonelik)', value: totalFixedExpenses },
-              { name: 'Değişken Harcamalar', value: totalExpenseAmount }
+              { name: 'Kalan Nakit', value: Math.max(0, remainingSalary), color: '#10b981' },
+              { name: 'Sabit Yük (Borç+Abonelik)', value: totalFixedExpenses, color: '#f59e0b' },
+              { name: 'Değişken Harcamalar', value: totalExpenseAmount, color: '#ec4899' }
           ];
 
           const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
@@ -529,6 +533,21 @@
       };
       const stats = getStats();
 
+      // --- ORTAK VERİTABANI KAYIT YARDIMCISI ---
+      const saveToFirebase = async (id, payload, successMessage, errorPrefix) => {
+          const { db, doc, setDoc } = window.firebaseApp;
+          try {
+              const savePromise = setDoc(doc(db, 'portfoy_kayitlari_v2', id), payload);
+              await Promise.race([savePromise, new Promise((_, r) => setTimeout(() => r(new Error("TIMEOUT")), 15000))]);
+              showToast(successMessage, "success");
+              return true;
+          } catch (error) {
+              console.error(errorPrefix, error);
+              showToast(error.message === "TIMEOUT" ? "Bağlantı Zaman Aşımı. Güvenlik kalkanlarını kontrol edin." : `${errorPrefix}: ${error.message}`, "error");
+              return false;
+          }
+      };
+
       // --- AKSİYONLAR ---
       const handleAddStock = () => setStocks([...stocks, { id: Date.now(), name: '', invested: '', current: '' }]);
       const handleRemoveStock = (id) => setStocks(stocks.filter(s => s.id !== id));
@@ -542,79 +561,94 @@
         setEmergencyFund(entry.emergencyFund ? String(entry.emergencyFund).replace('.', ',') : ''); setPassiveIncome(entry.passiveIncome ? String(entry.passiveIncome).replace('.', ',') : '');
         setStocks(entry.stocks && entry.stocks.length > 0 ? entry.stocks.map(s => ({...s, invested: s.invested ? String(s.invested).replace('.', ',') : '', current: s.current ? String(s.current).replace('.', ',') : ''})) : [{ id: Date.now(), name: '', invested: '', current: '' }]);
         setActiveTab('add'); window.scrollTo({ top: 0, behavior: 'smooth' });
-        showToast(isAleyna ? "Kayıt düzenleme açıldı güzelim, değiştirip kaydedebilirsin 💖" : "Kayıt düzenleme moduna alındı. Güncelleyip kaydedebilirsiniz.", "success");
+        showToast(isAleyna ? "Kayıt düzenleme açıldı güzelim, değiştirip kaydedebilirsin 💖" : "Kayıt düzenleme moduna alındı.", "success");
       };
 
       const handleSaveEntry = async (e) => {
-        e.preventDefault(); if (!user) return; setIsSaving(true);
-        const { db, doc, setDoc } = window.firebaseApp;
+        e.preventDefault(); if (!user) return; setIsSavingAction(true);
         const docIdToSave = entries.find(ev => ev.date === date)?.id || Date.now().toString();
-
-        const newEntry = {
+        const payload = {
           id: docIdToSave, type: 'entry', date,
           mmfInvested: parseCurrency(mmfInvested), mmfCurrent: parseCurrency(mmfCurrent), goldInvested: parseCurrency(goldInvested), goldCurrent: parseCurrency(goldCurrent),
           fxInvested: parseCurrency(fxInvested), fxCurrent: parseCurrency(fxCurrent), emergencyFund: parseCurrency(emergencyFund), passiveIncome: parseCurrency(passiveIncome),
           stocks: stocks.map(s => ({ ...s, name: s.name || 'İsimsiz Hisse', invested: parseCurrency(s.invested), current: parseCurrency(s.current) }))
         };
+        const success = await saveToFirebase(docIdToSave, payload, isAleyna ? "Kayıt başarıyla eklendi güzelim! 💖" : "Haftalık değerlendirme başarıyla kaydedildi! 🚀", "Portföy Kayıt Hatası");
+        if(success) {
+            setActiveTab('dashboard');
+            setMmfInvested(''); setMmfCurrent(''); setGoldInvested(''); setGoldCurrent(''); setFxInvested(''); setFxCurrent(''); setPassiveIncome(''); setEmergencyFund(''); setStocks([]);
+        }
+        setIsSavingAction(false);
+      };
 
-        try {
-          const savePromise = setDoc(doc(db, 'portfoy_kayitlari_v2', docIdToSave), newEntry);
-          await Promise.race([savePromise, new Promise((_, r) => setTimeout(() => r(new Error("TIMEOUT")), 15000))]);
-          setActiveTab('dashboard'); showToast(isAleyna ? "Kayıt başarıyla eklendi güzelim! 💖" : "Haftalık değerlendirme başarıyla kaydedildi! 🚀");
-          setMmfInvested(''); setMmfCurrent(''); setGoldInvested(''); setGoldCurrent(''); setFxInvested(''); setFxCurrent(''); setPassiveIncome(''); setEmergencyFund(''); setStocks([]);
-        } catch (error) { showToast(error.message === "TIMEOUT" ? "Bağlantı Zaman Aşımı." : 'Kayıt Reddedildi.', "error"); } finally { setIsSaving(false); }
+      // --- BÜTÇE & TARİH KAYIT FONKSİYONLARI ---
+      const handleSaveSettings = async (e) => {
+        e.preventDefault(); if(!user) return; setIsSavingAction(true);
+        const payload = { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) };
+        await saveToFirebase('settings', payload, isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları güncellendi.", "Ayar Hatası");
+        setIsSavingAction(false);
       };
 
       const handleSaveSalary = async (e) => {
-        e.preventDefault(); if(!user) return;
-        try {
-            const { db, doc, setDoc } = window.firebaseApp; const id = 'sal_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
-                id, type: 'salary', date: new Date().toISOString().split('T')[0],
-                aliSalary: parseCurrency(aliSalary), aleynaSalary: parseCurrency(aleynaSalary),
-                aliFood: parseCurrency(aliFood), aleynaFood: parseCurrency(aleynaFood),
-                aliTransport: parseCurrency(aliTransport), aleynaTransport: parseCurrency(aleynaTransport),
-            });
-            setAliSalary(''); setAleynaSalary(''); setAliFood(''); setAleynaFood(''); setAliTransport(''); setAleynaTransport('');
-            showToast(isAleyna ? "Maaşlarımız bereketli olsun canım! 💰" : "Yeni maaş dönemi başarıyla başlatıldı.");
-        } catch (error) { showToast("Kaydedilemedi.", "error"); }
+        e.preventDefault(); if(!user) return; setIsSavingAction(true);
+        const id = 'sal_' + Date.now();
+        const coreSal = parseCurrency(aliSalary) + parseCurrency(aleynaSalary);
+        const extraSal = parseCurrency(aliFood) + parseCurrency(aleynaFood) + parseCurrency(aliTransport) + parseCurrency(aleynaTransport);
+        
+        const payload = { 
+            id, type: 'salary', date: new Date().toISOString().split('T')[0],
+            aliSalary: parseCurrency(aliSalary), aleynaSalary: parseCurrency(aleynaSalary),
+            aliFood: parseCurrency(aliFood), aleynaFood: parseCurrency(aleynaFood),
+            aliTransport: parseCurrency(aliTransport), aleynaTransport: parseCurrency(aleynaTransport),
+            totalAmount: coreSal + extraSal, coreSalary: coreSal
+        };
+        
+        const success = await saveToFirebase(id, payload, isAleyna ? "Maaşlarımız bereketli olsun canım! 💰" : "Yeni maaş dönemi başarıyla başlatıldı.", "Maaş Kayıt Hatası");
+        if(success) { setAliSalary(''); setAleynaSalary(''); setAliFood(''); setAleynaFood(''); setAliTransport(''); setAleynaTransport(''); }
+        setIsSavingAction(false);
       };
 
       const handleSaveExpense = async (e) => {
-        e.preventDefault(); if(!user) return;
-        try {
-            const { db, doc, setDoc } = window.firebaseApp; const id = 'exp_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'expense', name: expenseName, category: expenseCat, amount: parseCurrency(expenseAmount), date: new Date().toISOString().split('T')[0], owner: expenseOwner });
-            setExpenseName(''); setExpenseAmount(''); showToast(isAleyna ? "Harcama listeye eklendi tatlım 📝" : "Gider başarıyla işlendi.");
-        } catch (error) { showToast("Kaydedilemedi.", "error"); }
+        e.preventDefault(); if(!user) return; setIsSavingAction(true);
+        const id = 'exp_' + Date.now();
+        const payload = { id, type: 'expense', name: expenseName, category: expenseCat, amount: parseCurrency(expenseAmount), date: new Date().toISOString().split('T')[0], owner: expenseOwner };
+        const success = await saveToFirebase(id, payload, isAleyna ? "Harcama listeye eklendi tatlım 📝" : "Gider başarıyla işlendi.", "Harcama Hatası");
+        if(success) { setExpenseName(''); setExpenseAmount(''); }
+        setIsSavingAction(false);
       };
 
       const handleSaveSubscription = async (e) => {
-        e.preventDefault(); if(!user) return;
-        try {
-            const { db, doc, setDoc } = window.firebaseApp; const id = 'sub_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'subscription', name: subName, price: parseCurrency(subPrice), date: new Date().toISOString() });
-            setSubName(''); setSubPrice(''); showToast(isAleyna ? "Abonelik eklendi canım 📺" : "Abonelik başarıyla kaydedildi.");
-        } catch (error) { showToast("Kaydedilemedi.", "error"); }
+        e.preventDefault(); if(!user) return; setIsSavingAction(true);
+        const id = 'sub_' + Date.now();
+        const payload = { id, type: 'subscription', name: subName, price: parseCurrency(subPrice), date: new Date().toISOString() };
+        const success = await saveToFirebase(id, payload, isAleyna ? "Abonelik eklendi canım 📺" : "Abonelik başarıyla kaydedildi.", "Abonelik Hatası");
+        if(success) { setSubName(''); setSubPrice(''); }
+        setIsSavingAction(false);
       };
 
+      const handleDeleteDocument = async (id, successMsg) => {
+        if (!user || !window.confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
+        try { const { db, doc, deleteDoc } = window.firebaseApp; await deleteDoc(doc(db, 'portfoy_kayitlari_v2', id)); showToast(successMsg || "Kayıt silindi."); } catch (error) { showToast("Silinemedi.", "error"); }
+      };
+
+      // --- BORÇ YÖNETİMİ ---
       const handleSaveDebt = async (e) => {
-          e.preventDefault(); if(!user) return;
-          try {
-              const { db, doc, setDoc } = window.firebaseApp; const id = 'debt_' + Date.now();
-              await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
-                  id, type: 'debt', debtType: dbtType, name: dbtName, totalAmount: parseCurrency(dbtTotal), monthlyPayment: parseCurrency(dbtMonthly),
-                  totalInstallments: Number(dbtInstallments) || 0, paidInstallments: 0, interestRate: Number(dbtInterest) || 0, date: new Date().toISOString()
-              });
-              setDbtName(''); setDbtTotal(''); setDbtMonthly(''); setDbtInstallments(''); setDbtInterest('');
-              showToast(isAleyna ? "Borcumuz sisteme işlendi canım 💸" : "Borç başarıyla eklendi.");
-          } catch (error) { showToast("Kaydedilemedi.", "error"); }
+          e.preventDefault(); if(!user) return; setIsSavingAction(true);
+          const id = 'debt_' + Date.now();
+          const payload = { 
+              id, type: 'debt', debtType: dbtType, name: dbtName, totalAmount: parseCurrency(dbtTotal), monthlyPayment: parseCurrency(dbtMonthly),
+              totalInstallments: Number(dbtInstallments) || 0, paidInstallments: 0, interestRate: Number(dbtInterest) || 0, date: new Date().toISOString()
+          };
+          const success = await saveToFirebase(id, payload, isAleyna ? "Borcumuz sisteme işlendi canım 💸" : "Borç başarıyla eklendi.", "Borç Hatası");
+          if(success) { setDbtName(''); setDbtTotal(''); setDbtMonthly(''); setDbtInstallments(''); setDbtInterest(''); }
+          setIsSavingAction(false);
       };
 
       const handlePayLoanInstallment = async (debt) => {
           if (!user) return;
           const newPaid = (debt.paidInstallments || 0) + 1; const newTotal = Math.max(0, debt.totalAmount - debt.monthlyPayment);
-          try { const { db, doc, setDoc } = window.firebaseApp; await setDoc(doc(db, 'portfoy_kayitlari_v2', debt.id), { paidInstallments: newPaid, totalAmount: newTotal }, { merge: true }); showToast(isAleyna ? "Taksit ödendi! Bir adım daha yaklaştık 🎉" : "Kredi taksiti başarıyla düşüldü."); } catch(e) { showToast("Hata.", "error"); }
+          const payload = { paidInstallments: newPaid, totalAmount: newTotal };
+          try { const { db, doc, setDoc } = window.firebaseApp; await setDoc(doc(db, 'portfoy_kayitlari_v2', debt.id), payload, { merge: true }); showToast(isAleyna ? "Taksit ödendi! Bir adım daha yaklaştık 🎉" : "Kredi taksiti başarıyla düşüldü."); } catch(e) { showToast("Hata.", "error"); }
       };
 
       const handlePayCardDebt = async (debt) => {
@@ -626,56 +660,46 @@
           }
       };
 
+      // --- MODÜL KAYIT İŞLEMLERİ ---
       const handleSaveHouse = async (e) => {
-          e.preventDefault(); if(!user) return;
-          try {
-              const { db, doc, setDoc } = window.firebaseApp; const id = 'house_' + Date.now();
-              await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'house', title: hTitle, price: parseCurrency(hPrice), link: hLink, address: hAddress, rating: Number(hRating), date: new Date().toISOString() });
-              setHTitle(''); setHPrice(''); setHLink(''); setHAddress(''); setHRating('3'); showToast(isAleyna ? "Ev adayımız eklendi aşkım 🏡💖" : "Ev adayı eklendi.");
-          } catch (error) { showToast("Kaydedilemedi.", "error"); }
+          e.preventDefault(); if(!user) return; setIsSavingAction(true);
+          const id = 'house_' + Date.now();
+          const payload = { id, type: 'house', title: hTitle, price: parseCurrency(hPrice), link: hLink, address: hAddress, rating: Number(hRating), date: new Date().toISOString() };
+          const success = await saveToFirebase(id, payload, isAleyna ? "Ev adayımız eklendi aşkım 🏡💖" : "Ev adayı eklendi.", "Ev Kayıt Hatası");
+          if(success) { setHTitle(''); setHPrice(''); setHLink(''); setHAddress(''); setHRating('3'); }
+          setIsSavingAction(false);
       };
 
       const handleSaveDowry = async (e) => {
-          e.preventDefault(); if(!user) return;
-          try {
-              const { db, doc, setDoc } = window.firebaseApp; const id = 'dowry_' + Date.now();
-              await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'dowry', name: dName, price: parseCurrency(dPrice), status: dStatus, date: new Date().toISOString() });
-              setDName(''); setDPrice(''); showToast(isAleyna ? "Çeyiz listemize eklendi tatlım 🎁" : "Çeyiz ürünü kaydedildi.");
-          } catch (error) { showToast("Kaydedilemedi.", "error"); }
+          e.preventDefault(); if(!user) return; setIsSavingAction(true);
+          const id = 'dowry_' + Date.now();
+          const payload = { id, type: 'dowry', name: dName, price: parseCurrency(dPrice), status: dStatus, date: new Date().toISOString() };
+          const success = await saveToFirebase(id, payload, isAleyna ? "Çeyiz listemize eklendi tatlım 🎁" : "Çeyiz ürünü kaydedildi.", "Çeyiz Hatası");
+          if(success) { setDName(''); setDPrice(''); }
+          setIsSavingAction(false);
       };
 
       const handleSaveMedia = async (e) => {
-          e.preventDefault(); if(!user) return;
-          try {
-              const { db, doc, setDoc } = window.firebaseApp; const id = 'media_' + Date.now();
-              await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'media', title: mTitle, mediaType: mType, status: mStatus, date: new Date().toISOString() });
-              setMTitle(''); showToast(isAleyna ? "Listeye eklendi! Beraber bakarız 🍿💖" : "Kayıt eklendi.");
-          } catch (error) { showToast("Kaydedilemedi.", "error"); }
+          e.preventDefault(); if(!user) return; setIsSavingAction(true);
+          const id = 'media_' + Date.now();
+          const payload = { id, type: 'media', title: mTitle, mediaType: mType, status: mStatus, date: new Date().toISOString() };
+          const success = await saveToFirebase(id, payload, isAleyna ? "Listeye eklendi! Beraber bakarız 🍿💖" : "Kayıt eklendi.", "Medya Hatası");
+          if(success) { setMTitle(''); }
+          setIsSavingAction(false);
       };
 
       const handleSaveWishlist = async (e) => {
-          e.preventDefault(); if(!user) return;
-          try {
-              const { db, doc, setDoc } = window.firebaseApp; const id = 'wishlist_' + Date.now();
-              await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'wishlist', name: wName, price: parseCurrency(wPrice), link: wLink, priority: Number(wPriority), status: 'bekliyor', date: new Date().toISOString() });
-              setWName(''); setWPrice(''); setWLink(''); setWPriority('2'); showToast(isAleyna ? "Dileğimiz listeye eklendi aşkım ✨💖" : "Hedef eklendi.");
-          } catch (error) { showToast("Kaydedilemedi.", "error"); }
-      };
-
-      const handleSaveSettings = async (e) => {
-        e.preventDefault(); if(!user) return;
-        try { const { db, doc, setDoc } = window.firebaseApp; await setDoc(doc(db, 'portfoy_kayitlari_v2', 'settings'), { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) }); showToast(isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları güncellendi."); } 
-        catch (error) { showToast("Kaydedilemedi.", "error"); }
+          e.preventDefault(); if(!user) return; setIsSavingAction(true);
+          const id = 'wishlist_' + Date.now();
+          const payload = { id, type: 'wishlist', name: wName, price: parseCurrency(wPrice), link: wLink, priority: Number(wPriority), status: 'bekliyor', date: new Date().toISOString() };
+          const success = await saveToFirebase(id, payload, isAleyna ? "Dileğimiz listeye eklendi aşkım ✨💖" : "Hedef eklendi.", "Dilek Hatası");
+          if(success) { setWName(''); setWPrice(''); setWLink(''); setWPriority('2'); }
+          setIsSavingAction(false);
       };
 
       const handleUpdateDocField = async (id, field, value, successMsg) => {
           if(!user) return;
           try { const { db, doc, setDoc } = window.firebaseApp; await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { [field]: value }, { merge: true }); showToast(successMsg || "Güncellendi."); } catch (error) { showToast("Güncellenemedi.", "error"); }
-      };
-
-      const handleDeleteDocument = async (id, successMsg) => {
-        if (!user || !window.confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
-        try { const { db, doc, deleteDoc } = window.firebaseApp; await deleteDoc(doc(db, 'portfoy_kayitlari_v2', id)); showToast(successMsg || "Kayıt silindi."); } catch (error) { showToast("Silinemedi.", "error"); }
       };
 
       const handleExportCSV = () => { /* Export logic remains same */ showToast("Excel başarıyla indirildi."); };
@@ -684,7 +708,7 @@
       if (!loading && !user) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center">
-            <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"></div>
+            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
             <div className="relative z-10 w-full max-w-md p-8 m-4 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl text-center border border-white/20 animate-fade-in">
               <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-emerald-400 rounded-3xl mx-auto flex items-center justify-center shadow-lg mb-6 transform rotate-12">
@@ -696,6 +720,7 @@
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6" />
                 Sisteme Güvenli Giriş Yap
               </button>
+              <p className="text-xs text-slate-400 mt-6 font-medium"><i className="fa-solid fa-lock"></i> Sadece yetkili hesaplar erişebilir.</p>
             </div>
           </div>
         );
@@ -1167,12 +1192,11 @@
                               </span>
                           </div>
 
-                          <button type="submit" className={`cute-bounce w-full text-white font-bold py-4 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'}`}>
-                              <i className="fa-solid fa-check"></i> Yeni Bütçe Dönemini Başlat
+                          <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-4 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isSavingAction ? 'bg-slate-400' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30')}`}>
+                              {isSavingAction ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check"></i>} Yeni Bütçe Dönemini Başlat
                           </button>
                       </form>
                       
-                      {/* En son girilen maaş bilgisi */}
                       {budgetStats?.latestSalary && (
                           <p className="text-center text-xs font-bold text-slate-400 mt-4">
                             Son Güncelleme: {new Date(budgetStats.latestSalary.date).toLocaleDateString('tr-TR')}
@@ -1200,7 +1224,7 @@
                                       <option value="Aleyna">Aleyna</option>
                                   </select>
                                   <CurrencyInput value={expenseAmount} onChange={setExpenseAmount} placeholder="Tutar" isAleyna={isAleyna} className={isAleyna ? 'focus:border-pink-500' : 'focus:border-rose-500'} />
-                                  <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
+                                  <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800')}`}>
                                       Ekle
                                   </button>
                               </div>
@@ -1236,7 +1260,7 @@
                                       <CurrencyInput value={subPrice} onChange={setSubPrice} placeholder="Aylık" isAleyna={isAleyna} className={isAleyna ? 'focus:border-pink-500' : 'focus:border-blue-500'} />
                                   </div>
                               </div>
-                              <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center ${isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
+                              <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center ${isSavingAction ? 'bg-slate-400' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800')}`}>
                                   Abone Ol
                               </button>
                           </form>
@@ -1284,7 +1308,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
                                 <i className="fa-solid fa-wand-magic-sparkles"></i> Dileği Evrene Gönder
                             </button>
                         </form>
@@ -1390,7 +1414,7 @@
                                     </>
                                 )}
                             </div>
-                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
                                 <i className="fa-solid fa-plus"></i> Borcu Kaydet
                             </button>
                         </form>
@@ -1468,7 +1492,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
                                 <i className="fa-solid fa-plus"></i> Listeye Ekle
                             </button>
                         </form>
@@ -1530,7 +1554,7 @@
                                 <option value="alinacak">Alınacak</option>
                                 <option value="alindi">Alındı ✅</option>
                             </select>
-                            <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
                                 Ekle
                             </button>
                         </form>
@@ -1593,7 +1617,7 @@
                                 <option value="oyun">🎮 Oyun</option>
                                 <option value="kitap">📚 Kitap</option>
                             </select>
-                            <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
                                 Raf'a Ekle
                             </button>
                         </form>
@@ -1716,9 +1740,9 @@
 
                   </div>
 
-                  <button type="submit" disabled={isSaving} className={`w-full cute-bounce text-white font-bold py-5 rounded-2xl shadow-xl transition text-lg flex justify-center items-center gap-2 ${isSaving ? 'bg-slate-400 cursor-not-allowed' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-slate-900 hover:bg-slate-800')}`}>
-                    {isSaving ? <i className="fa-solid fa-spinner fa-spin text-xl"></i> : (isAleyna ? <span className="text-xl">🐾</span> : <i className="fa-solid fa-cloud-arrow-up"></i>)}
-                    {isSaving ? 'Buluta Eşitleniyor...' : (isAleyna ? 'Kaydet Güzelim 💖' : 'Verileri Güvenli Şekilde Kaydet')}
+                  <button type="submit" disabled={isSavingAction} className={`w-full cute-bounce text-white font-bold py-5 rounded-2xl shadow-xl transition text-lg flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400 cursor-not-allowed' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-slate-900 hover:bg-slate-800')}`}>
+                    {isSavingAction ? <i className="fa-solid fa-spinner fa-spin text-xl"></i> : (isAleyna ? <span className="text-xl">🐾</span> : <i className="fa-solid fa-cloud-arrow-up"></i>)}
+                    {isSavingAction ? 'Buluta Eşitleniyor...' : (isAleyna ? 'Kaydet Güzelim 💖' : 'Verileri Güvenli Şekilde Kaydet')}
                   </button>
                 </form>
               </div>

@@ -186,23 +186,7 @@
     const RomanticGreeting = ({ isOpen }) => {
       const [slideIndex, setSlideIndex] = useState(0);
 
-      useEffect(() => {
-        if (!isOpen) return;
-        const interval = setInterval(() => {
-          setSlideIndex(prev => prev + 1);
-        }, 3500);
-        return () => clearInterval(interval);
-      }, [isOpen]);
-
-      if (!isOpen) return null;
-
-      const slides = [
-        "Hoş geldin Gülüm... 🌹",
-        "Günün güzel geçsin Güzelim 🌸",
-        "Seni çok seviyorum Canım... 💖",
-        "Portföyüne hoş geldin... ✨"
-      ];
-
+      // ÇÖZÜM: Hook (useMemo), 'if (!isOpen)' kontrolünden ÖNCE çağrılmalıdır. (Rules of Hooks)
       const effects = useMemo(() => {
         const items = [];
         const icons = ['🌸', '🌺', '🌷', '🦋', '🦋', '✨', '💖', '💐'];
@@ -220,6 +204,23 @@
         }
         return items;
       }, []);
+
+      useEffect(() => {
+        if (!isOpen) return;
+        const interval = setInterval(() => {
+          setSlideIndex(prev => prev + 1);
+        }, 3500);
+        return () => clearInterval(interval);
+      }, [isOpen]);
+
+      if (!isOpen) return null;
+
+      const slides = [
+        "Hoş geldin Gülüm... 🌹",
+        "Günün güzel geçsin Güzelim 🌸",
+        "Seni çok seviyorum Canım... 💖",
+        "Portföyüne hoş geldin... ✨"
+      ];
 
       return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-50 to-rose-100 romantic-screen overflow-hidden">

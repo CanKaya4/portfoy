@@ -120,26 +120,53 @@
       transition: all 0.3s ease;
     }
 
-    /* YENİ: SEVİMLİ MASKOT GİZLEN/ÇIK (PEEK) ANİMASYONU */
-    @keyframes peek-up {
-      0%, 100% { transform: translateY(100%); opacity: 0; }
-      15%, 85% { transform: translateY(0); opacity: 1; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .peek-anim {
-      position: absolute;
-      bottom: 0;
-      right: 30px;
-      font-size: 2.5rem;
-      animation: peek-up 10s infinite ease-in-out;
-      z-index: 0;
-      pointer-events: none;
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
     }
-    .peek-delay-1 { animation-delay: 2s; }
-    .peek-delay-2 { animation-delay: 5s; }
-    .peek-delay-3 { animation-delay: 7s; }
+
+    /* TATLI HAYVANLAR (PEEK) ANİMASYONLARI */
+    @keyframes peek-bl {
+      0%, 100% { transform: translate(-100%, 100%) rotate(-30deg); }
+      10%, 20% { transform: translate(10px, -10px) rotate(10deg); }
+      30%, 90% { transform: translate(-100%, 100%) rotate(-30deg); }
+    }
+    .animal-bl { position: fixed; bottom: 0; left: 0; animation: peek-bl 15s infinite ease-in-out; font-size: 3rem; z-index: 100; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+    
+    @keyframes peek-br {
+      0%, 100% { transform: translate(100%, 100%) rotate(30deg); }
+      40%, 50% { transform: translate(-10px, -10px) rotate(-10deg); }
+      60%, 90% { transform: translate(100%, 100%) rotate(30deg); }
+    }
+    .animal-br { position: fixed; bottom: 0; right: 0; animation: peek-br 18s infinite ease-in-out; font-size: 3rem; z-index: 100; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+    
+    @keyframes peek-tl {
+      0%, 100% { transform: translate(-100%, -100%) rotate(135deg); }
+      60%, 70% { transform: translate(10px, 10px) rotate(180deg); }
+      80%, 90% { transform: translate(-100%, -100%) rotate(135deg); }
+    }
+    .animal-tl { position: fixed; top: 0; left: 0; animation: peek-tl 20s infinite ease-in-out; font-size: 2.5rem; z-index: 100; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+
+    @keyframes peek-tr {
+      0%, 100% { transform: translate(100%, -100%) rotate(-135deg); }
+      25%, 35% { transform: translate(-10px, 10px) rotate(-180deg); }
+      45%, 90% { transform: translate(100%, -100%) rotate(-135deg); }
+    }
+    .animal-tr { position: fixed; top: 0; right: 0; animation: peek-tr 22s infinite ease-in-out; font-size: 2.5rem; z-index: 100; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+
+    @keyframes walk-across {
+      0% { transform: translateX(-10vw); opacity: 0; }
+      10% { opacity: 0.8; }
+      90% { opacity: 0.8; }
+      100% { transform: translateX(110vw); opacity: 0; }
+    }
+    .animal-walk { position: fixed; bottom: 15%; left: 0; animation: walk-across 25s infinite linear; font-size: 2rem; opacity: 0.5; z-index: 99; pointer-events: none; }
   </style>
 </head>
-<body class="text-slate-800 font-sans pb-24 md:pb-12">
+<body class="text-slate-800 font-sans pb-24 md:pb-12 overflow-x-hidden">
   
   <div id="root"></div>
 
@@ -177,6 +204,65 @@
 
     const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Diğer'];
     const CHART_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b'];
+
+    // --- YARDIMCI FONKSİYONLAR ---
+    const formatCurrency = (value, currency = 'TRY', decimals = 0) => {
+        if(currency === 'USD') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: decimals }).format(value || 0);
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: decimals }).format(value || 0);
+    };
+
+    const parseCurrency = (val) => {
+        if (val === undefined || val === null || val === '') return 0;
+        return Number(String(val).replace(/\./g, '').replace(',', '.')) || 0;
+    };
+
+    // --- OTOMATİK FORMATLAYAN GİRİŞ BİLEŞENİ (YENİ) ---
+    const CurrencyInput = ({ value, onChange, placeholder, className, isAleyna, icon = "₺" }) => {
+        const formatVal = (val) => {
+            if (val === undefined || val === null || val === '') return '';
+            const strVal = String(val);
+            const parts = strVal.split(',');
+            let integerPart = parts[0].replace(/\D/g, '');
+            integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            let decimalPart = parts.length > 1 ? ',' + parts[1].replace(/\D/g, '').substring(0, 2) : '';
+            return strVal.includes(',') && parts.length === 1 ? integerPart + ',' : integerPart + decimalPart;
+        };
+
+        const handleChange = (e) => {
+            let val = e.target.value;
+            val = val.replace(/[^0-9,]/g, '');
+            const commaCount = (val.match(/,/g) || []).length;
+            if (commaCount > 1) return;
+            onChange(val);
+        };
+
+        return (
+            <div className={`relative w-full ${className || ''}`}>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">{icon}</span>
+                <input 
+                    type="text" 
+                    inputMode="decimal"
+                    placeholder={placeholder} 
+                    value={formatVal(value)} 
+                    onChange={handleChange} 
+                    className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} 
+                />
+            </div>
+        );
+    };
+
+    // --- SEVİMLİ HAYVANLAR ANİMASYONU ---
+    const CuteAnimals = ({ isAleyna }) => {
+      return (
+        <>
+          <div className="animal-bl">🦕</div>
+          <div className="animal-br">🐱</div>
+          <div className="animal-tl">🐸</div>
+          <div className="animal-tr">🐢</div>
+          {isAleyna && <div className="animal-walk">🐾🐈🐾</div>}
+        </>
+      );
+    };
 
     const Toast = ({ message, type, onClose }) => {
       useEffect(() => {
@@ -282,11 +368,11 @@
 
       if (!isOpen) return null;
 
-      const slides = [
-        "Dünyanın en güzel nişanlısı gelmiş... 🌸",
-        "Gülüşüyle günüme güneş açtıranım ☀️",
-        "Hoş geldin canımın içi, kedilerin annesi 🐱💖",
-        "Birlikte kuracağımız o güzel geleceğe... 🏡✨"
+       const slides = [
+        "Hoşgeldin gülüm 🌸",
+        "Seni sevdiğimi söylemiş miydim ? ☀️",
+        "İyi ki varsın gülüm 🐱💖",
+        "Seni her şeyinle seviyorum güzelim 💖🏡✨"
       ];
 
       return (
@@ -331,7 +417,7 @@
       const [dowryItems, setDowryItems] = useState([]); 
       const [mediaItems, setMediaItems] = useState([]);
       const [debts, setDebts] = useState([]);
-      const [subscriptions, setSubscriptions] = useState([]); // YENİ: Abonelikler
+      const [subscriptions, setSubscriptions] = useState([]);
       const [settings, setSettings] = useState({ engagementDate: '', marriageDate: '', targetAmount: '' });
 
       const [activeTab, setActiveTab] = useState('dashboard');
@@ -344,7 +430,7 @@
 
       const [marketData, setMarketData] = useState({ usd: null, eur: null, gold: null, interest: 50.0 });
 
-      // Form States (Portföy)
+      // Form States (Portföy) - ŞİMDİ STRİNG OLARAK TUTULUYOR Kİ FORMATLANABİLSİN
       const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
       const [mmfInvested, setMmfInvested] = useState('');
       const [mmfCurrent, setMmfCurrent] = useState('');
@@ -359,7 +445,7 @@
       const [salaryAmount, setSalaryAmount] = useState('');
       const [expenseName, setExpenseName] = useState('');
       const [expenseAmount, setExpenseAmount] = useState('');
-      const [expenseCat, setExpenseCat] = useState('Market'); // YENİ: Harcama Kategorisi
+      const [expenseCat, setExpenseCat] = useState('Market');
       const [engDateInput, setEngDateInput] = useState('');
       const [marDateInput, setMarDateInput] = useState('');
       const [targetAmountInput, setTargetAmountInput] = useState(''); 
@@ -370,7 +456,7 @@
       const [mTitle, setMTitle] = useState(''); const [mType, setMType] = useState('film'); const [mStatus, setMStatus] = useState('bekliyor');
       const [dbtName, setDbtName] = useState(''); const [dbtType, setDbtType] = useState('loan'); const [dbtTotal, setDbtTotal] = useState(''); const [dbtMonthly, setDbtMonthly] = useState(''); const [dbtInstallments, setDbtInstallments] = useState(''); const [dbtInterest, setDbtInterest] = useState('');
       
-      // YENİ: Abonelik Formu
+      // Abonelik Formu
       const [subName, setSubName] = useState(''); const [subPrice, setSubPrice] = useState('');
 
       const isAleyna = user?.email === 'aleynaerdn2294@gmail.com';
@@ -425,7 +511,7 @@
         return () => unsubscribe();
       }, [isFirebaseReady, hasGreeted]);
 
-      // Veritabanı Dinleme (Tüm ERP Tabloları)
+      // Veritabanı Dinleme
       useEffect(() => {
         if (!isFirebaseReady || !user) return;
         const { db, collection, onSnapshot } = window.firebaseApp;
@@ -446,9 +532,9 @@
           setSalaries(data.filter(d => d.type === 'salary').sort((a,b) => new Date(b.date) - new Date(a.date)));
           setExpenses(data.filter(d => d.type === 'expense').sort((a,b) => new Date(b.date) - new Date(a.date)));
           setDebts(data.filter(d => d.type === 'debt').sort((a,b) => new Date(b.date) - new Date(a.date)));
-          setSubscriptions(data.filter(d => d.type === 'subscription').sort((a,b) => b.date.localeCompare(a.date))); // YENİ
+          setSubscriptions(data.filter(d => d.type === 'subscription').sort((a,b) => b.date.localeCompare(a.date))); 
           
-          setHouses(data.filter(d => d.type === 'house').sort((a,b) => b.price - a.price)); // Fiyata göre sırala
+          setHouses(data.filter(d => d.type === 'house').sort((a,b) => b.price - a.price)); 
           setDowryItems(data.filter(d => d.type === 'dowry').sort((a,b) => b.id - a.id));
           setMediaItems(data.filter(d => d.type === 'media').sort((a,b) => b.id - a.id));
 
@@ -457,7 +543,7 @@
               setSettings(s);
               setEngDateInput(s.engagementDate || '');
               setMarDateInput(s.marriageDate || '');
-              setTargetAmountInput(s.targetAmount || '');
+              setTargetAmountInput(s.targetAmount ? String(s.targetAmount).replace('.', ',') : '');
           }
           
           setLoading(false);
@@ -489,12 +575,6 @@
         } catch (error) { showToast("Çıkış yapılamadı.", "error"); }
       };
 
-      // TİP DÖNÜŞÜMLERİ VE HESAPLAMALAR
-      const formatCurrency = (value, currency = 'TRY', decimals = 0) => {
-        if(currency === 'USD') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: decimals }).format(value || 0);
-        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: decimals }).format(value || 0);
-      };
-
       const sortedEntries = useMemo(() => [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)), [entries]);
       const latestEntry = sortedEntries[0];
       const previousEntry = sortedEntries[1];
@@ -504,11 +584,9 @@
           const latestSalary = salaries[0];
           if (!latestSalary) return null;
 
-          // 1. O ayki harcamalar
           const currentExpenses = expenses.filter(ex => new Date(ex.date) >= new Date(latestSalary.date));
           const totalExpenseAmount = currentExpenses.reduce((s, ex) => s + (ex.amount || 0), 0);
           
-          // Harcama Kategorisi Verisi (Grafik İçin)
           const expenseCategoryData = Object.entries(
               currentExpenses.reduce((acc, ex) => {
                   acc[ex.category || 'Diğer'] = (acc[ex.category || 'Diğer'] || 0) + ex.amount;
@@ -516,18 +594,14 @@
               }, {})
           ).map(([name, value]) => ({ name, value }));
 
-          // 2. Aktif Borçların Aylık Yükü
           const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totalInstallments || 0));
           const activeCards = debts.filter(d => d.debtType === 'card' && d.totalAmount > 0);
           const totalDebtPayments = [...activeLoans, ...activeCards].reduce((sum, d) => sum + (d.monthlyPayment || 0), 0);
 
-          // 3. YENİ: Abonelik Yükü
           const totalSubPayments = subscriptions.reduce((sum, sub) => sum + (sub.price || 0), 0);
 
-          // 4. Kalan Net Maaş (Maaş - Harcamalar - Sabit Borçlar - Abonelikler)
           const remainingSalary = latestSalary.amount - totalExpenseAmount - totalDebtPayments - totalSubPayments;
 
-          // 5. Yatırıma Giden Tutar
           let baseInvested = 0;
           const entryBeforeSalary = sortedEntries.find(e => new Date(e.date) <= new Date(latestSalary.date));
           if(entryBeforeSalary) {
@@ -639,11 +713,17 @@
 
       const handleEditEntry = (entry) => {
         setDate(entry.date);
-        setMmfInvested(entry.mmfInvested || ''); setMmfCurrent(entry.mmfCurrent || '');
-        setGoldInvested(entry.goldInvested || ''); setGoldCurrent(entry.goldCurrent || '');
-        setFxInvested(entry.fxInvested || ''); setFxCurrent(entry.fxCurrent || '');
-        setPassiveIncome(entry.passiveIncome || '');
-        setStocks(entry.stocks && entry.stocks.length > 0 ? entry.stocks : [{ id: Date.now(), name: '', invested: '', current: '' }]);
+        setMmfInvested(entry.mmfInvested ? String(entry.mmfInvested).replace('.', ',') : ''); 
+        setMmfCurrent(entry.mmfCurrent ? String(entry.mmfCurrent).replace('.', ',') : '');
+        setGoldInvested(entry.goldInvested ? String(entry.goldInvested).replace('.', ',') : ''); 
+        setGoldCurrent(entry.goldCurrent ? String(entry.goldCurrent).replace('.', ',') : '');
+        setFxInvested(entry.fxInvested ? String(entry.fxInvested).replace('.', ',') : ''); 
+        setFxCurrent(entry.fxCurrent ? String(entry.fxCurrent).replace('.', ',') : '');
+        setPassiveIncome(entry.passiveIncome ? String(entry.passiveIncome).replace('.', ',') : '');
+        
+        setStocks(entry.stocks && entry.stocks.length > 0 
+            ? entry.stocks.map(s => ({...s, invested: s.invested ? String(s.invested).replace('.', ',') : '', current: s.current ? String(s.current).replace('.', ',') : ''})) 
+            : [{ id: Date.now(), name: '', invested: '', current: '' }]);
         
         setActiveTab('add');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -659,11 +739,11 @@
 
         const newEntry = {
           id: docIdToSave, type: 'entry', date,
-          mmfInvested: Number(mmfInvested) || 0, mmfCurrent: Number(mmfCurrent) || 0,
-          goldInvested: Number(goldInvested) || 0, goldCurrent: Number(goldCurrent) || 0,
-          fxInvested: Number(fxInvested) || 0, fxCurrent: Number(fxCurrent) || 0,
-          passiveIncome: Number(passiveIncome) || 0,
-          stocks: stocks.map(s => ({ ...s, name: s.name || 'İsimsiz Hisse', invested: Number(s.invested) || 0, current: Number(s.current) || 0 }))
+          mmfInvested: parseCurrency(mmfInvested), mmfCurrent: parseCurrency(mmfCurrent),
+          goldInvested: parseCurrency(goldInvested), goldCurrent: parseCurrency(goldCurrent),
+          fxInvested: parseCurrency(fxInvested), fxCurrent: parseCurrency(fxCurrent),
+          passiveIncome: parseCurrency(passiveIncome),
+          stocks: stocks.map(s => ({ ...s, name: s.name || 'İsimsiz Hisse', invested: parseCurrency(s.invested), current: parseCurrency(s.current) }))
         };
 
         try {
@@ -684,7 +764,7 @@
         if(!user) return;
         try {
             const { db, doc, setDoc } = window.firebaseApp;
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', 'settings'), { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: Number(targetAmountInput) || 0 });
+            await setDoc(doc(db, 'portfoy_kayitlari_v2', 'settings'), { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) });
             showToast(isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları başarıyla güncellendi.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
       };
@@ -695,7 +775,7 @@
         try {
             const { db, doc, setDoc } = window.firebaseApp;
             const id = 'sal_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'salary', amount: Number(salaryAmount), date: new Date().toISOString().split('T')[0] });
+            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'salary', amount: parseCurrency(salaryAmount), date: new Date().toISOString().split('T')[0] });
             setSalaryAmount('');
             showToast(isAleyna ? "Maaşımız bereketli olsun canım! 💰" : "Maaş girişi başarıyla eklendi.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
@@ -707,7 +787,7 @@
         try {
             const { db, doc, setDoc } = window.firebaseApp;
             const id = 'exp_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'expense', name: expenseName, category: expenseCat, amount: Number(expenseAmount), date: new Date().toISOString().split('T')[0] });
+            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'expense', name: expenseName, category: expenseCat, amount: parseCurrency(expenseAmount), date: new Date().toISOString().split('T')[0] });
             setExpenseName(''); setExpenseAmount('');
             showToast(isAleyna ? "Harcama listeye eklendi tatlım 📝" : "Gider başarıyla işlendi.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
@@ -719,7 +799,7 @@
         try {
             const { db, doc, setDoc } = window.firebaseApp;
             const id = 'sub_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'subscription', name: subName, price: Number(subPrice), date: new Date().toISOString() });
+            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'subscription', name: subName, price: parseCurrency(subPrice), date: new Date().toISOString() });
             setSubName(''); setSubPrice('');
             showToast(isAleyna ? "Abonelik eklendi canım 📺" : "Abonelik başarıyla kaydedildi.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
@@ -743,7 +823,7 @@
               const id = 'debt_' + Date.now();
               await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
                   id, type: 'debt', debtType: dbtType, name: dbtName,
-                  totalAmount: Number(dbtTotal), monthlyPayment: Number(dbtMonthly),
+                  totalAmount: parseCurrency(dbtTotal), monthlyPayment: parseCurrency(dbtMonthly),
                   totalInstallments: Number(dbtInstallments) || 0, paidInstallments: 0,
                   interestRate: Number(dbtInterest) || 0, date: new Date().toISOString()
               });
@@ -766,7 +846,7 @@
       const handlePayCardDebt = async (debt) => {
           if (!user) return;
           const amountStr = window.prompt(`'${debt.name}' için ödenen tutarı girin (TL):`);
-          const amount = Number(amountStr);
+          const amount = parseCurrency(amountStr);
           if (amount > 0) {
               const newTotal = Math.max(0, debt.totalAmount - amount);
               try {
@@ -785,7 +865,7 @@
               const { db, doc, setDoc } = window.firebaseApp;
               const id = 'house_' + Date.now();
               await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
-                  id, type: 'house', title: hTitle, price: Number(hPrice), link: hLink, address: hAddress, rating: Number(hRating), date: new Date().toISOString() 
+                  id, type: 'house', title: hTitle, price: parseCurrency(hPrice), link: hLink, address: hAddress, rating: Number(hRating), date: new Date().toISOString() 
               });
               setHTitle(''); setHPrice(''); setHLink(''); setHAddress(''); setHRating('3');
               showToast(isAleyna ? "Ev adayımız eklendi aşkım 🏡💖" : "Ev adayı başarıyla eklendi.");
@@ -799,7 +879,7 @@
               const { db, doc, setDoc } = window.firebaseApp;
               const id = 'dowry_' + Date.now();
               await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
-                  id, type: 'dowry', name: dName, price: Number(dPrice), status: dStatus, date: new Date().toISOString() 
+                  id, type: 'dowry', name: dName, price: parseCurrency(dPrice), status: dStatus, date: new Date().toISOString() 
               });
               setDName(''); setDPrice('');
               showToast(isAleyna ? "Çeyiz listemize eklendi tatlım 🎁" : "Çeyiz ürünü kaydedildi.");
@@ -878,7 +958,7 @@
           <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-            <div className="relative z-10 w-full max-w-md p-8 m-4 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl text-center border border-white/20">
+            <div className="relative z-10 w-full max-w-md p-8 m-4 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl text-center border border-white/20 animate-fade-in">
               <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-emerald-400 rounded-3xl mx-auto flex items-center justify-center shadow-lg mb-6 transform rotate-12">
                 <i className="fa-solid fa-chart-line text-4xl text-white -rotate-12"></i>
               </div>
@@ -912,6 +992,7 @@
       return (
         <div className={`max-w-md md:max-w-5xl mx-auto min-h-screen relative z-10 ${isAleyna ? 'bg-pink-50/30' : ''}`}>
           
+          <CuteAnimals isAleyna={isAleyna} />
           {isAleyna && <AleynaThemeEffects />}
 
           {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -1010,7 +1091,6 @@
             {/* --- DASHBOARD TAB --- */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6 pb-6 animate-fade-in relative">
-                <div className="peek-anim text-3xl">🦕</div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {(specialDates.engDays !== null || specialDates.marDays !== null) && (
@@ -1084,6 +1164,61 @@
                   </div>
                 ) : (
                   <>
+                    {targetAmount > 0 && (
+                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'}`}>
+                            <div className="flex justify-between items-end mb-3">
+                                <div>
+                                    <h3 className={`text-base font-extrabold ${isAleyna ? 'text-pink-600' : 'text-indigo-600'} flex items-center gap-2`}>
+                                        <i className="fa-solid fa-bullseye"></i> Portföy Hedefimiz
+                                    </h3>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-0.5">HEDEF TUTAR</p>
+                                    <p className="text-sm font-black text-slate-700">{formatCurrency(targetAmount)}</p>
+                                </div>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden border border-slate-100 relative">
+                                <div className={`${isAleyna ? 'bg-gradient-to-r from-pink-400 to-rose-500' : 'bg-gradient-to-r from-indigo-400 to-blue-500'} h-full rounded-full transition-all duration-1000 relative`} style={{ width: `${targetProgress}%` }}>
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between text-[11px] font-black uppercase">
+                                <span className={isAleyna ? 'text-pink-600' : 'text-indigo-600'}>%{targetProgress.toFixed(1)} TAMAMLANDI</span>
+                                <span className="text-slate-400">KALAN: {formatCurrency(targetAmount - stats.totalCurrent)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {window.Recharts && chartData.length > 0 && (
+                        <div className={`bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'}`}>
+                            <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
+                                <i className={`fa-solid fa-chart-area ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Serüven Grafiği {isAleyna && <span className="cute-float text-sm">🦋</span>}
+                            </h3>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorVarlik" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={isAleyna ? '#ec4899' : '#6366f1'} stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor={isAleyna ? '#ec4899' : '#6366f1'} stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}} />
+                                        <YAxis hide={true} domain={['dataMin - 1000', 'auto']} />
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                                            formatter={(value) => formatCurrency(value)}
+                                            labelStyle={{ color: '#64748b', marginBottom: '0.25rem' }}
+                                        />
+                                        <Area type="monotone" name="Toplam Varlık" dataKey="Varlik" stroke={isAleyna ? '#db2777' : '#4f46e5'} strokeWidth={4} fillOpacity={1} fill="url(#colorVarlik)" />
+                                        <Area type="monotone" name="Yatırılan" dataKey="Yatirilan" stroke="#cbd5e1" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
                     <div className={`bg-gradient-to-br ${isAleyna ? 'from-rose-500 via-pink-600 to-purple-600 shadow-pink-600/30' : 'from-indigo-900 via-slate-900 to-slate-900 shadow-indigo-900/20'} rounded-[2rem] p-6 md:p-8 shadow-2xl text-white relative overflow-hidden transition-colors duration-1000`}>
                       <i className={`fa-solid ${isAleyna ? 'fa-heart' : 'fa-wallet'} absolute -right-6 -bottom-6 text-[150px] text-white/10 transform -rotate-12`}></i>
                       
@@ -1117,74 +1252,56 @@
                       </div>
                     </div>
 
-                    {/* YENİ: HARCAMA GRAFİĞİ */}
-                    {window.Recharts && budgetStats?.expenseCategoryData && budgetStats.expenseCategoryData.length > 0 && (
-                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
-                            <div className="peek-anim peek-delay-2 opacity-50">🐱</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 h-full">
                             <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
-                                <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Bu Ayın Harcama Dağılımı
+                                <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Varlık Dağılımı
                             </h3>
-                            <div className="h-48 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={budgetStats.expenseCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                                            {budgetStats.expenseCategoryData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                        <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                            <div className="flex h-4 rounded-full overflow-hidden mb-5 bg-slate-100">
+                                {stats.mmfRatio > 0 && <div style={{width: `${stats.mmfRatio}%`}} className="bg-emerald-500 h-full transition-all"></div>}
+                                {stats.goldRatio > 0 && <div style={{width: `${stats.goldRatio}%`}} className="bg-amber-400 h-full transition-all"></div>}
+                                {stats.fxRatio > 0 && <div style={{width: `${stats.fxRatio}%`}} className="bg-blue-500 h-full transition-all"></div>}
+                                {stats.stockRatio > 0 && <div style={{width: `${stats.stockRatio}%`}} className="bg-rose-500 h-full transition-all"></div>}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Para Piy.</p><p className="text-sm font-bold text-slate-800">%{stats.mmfRatio.toFixed(1)}</p></div></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Altın Fonu</p><p className="text-sm font-bold text-slate-800">%{stats.goldRatio.toFixed(1)}</p></div></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Döviz</p><p className="text-sm font-bold text-slate-800">%{stats.fxRatio.toFixed(1)}</p></div></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Hisse</p><p className="text-sm font-bold text-slate-800">%{stats.stockRatio.toFixed(1)}</p></div></div>
                             </div>
                         </div>
-                    )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* ÇEYİZ GRAFİĞİ */}
-                        {window.Recharts && (dowrySpent > 0 || dowryPending > 0) && (
-                            <div className={`bg-white rounded-3xl p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} h-full relative`}>
-                                <h3 className="text-lg font-extrabold text-slate-800 mb-3 flex items-center gap-2">
-                                    <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Durumu
-                                </h3>
-                                <div className="h-40 w-full relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2}>
-                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
-                                                <Cell fill="#e2e8f0" />
-                                            </Pie>
-                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="flex justify-between text-xs font-bold px-2 relative z-10">
-                                    <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
-                                    <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
-                                </div>
-                            </div>
-                        )}
+                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-100' : 'from-emerald-50 to-teal-50 border-emerald-100'} rounded-3xl p-6 shadow-sm border h-full flex flex-col justify-center relative overflow-hidden`}>
+                            {isAleyna && <span className="absolute -right-4 -bottom-4 text-6xl opacity-10">🐱</span>}
+                            <i className={`fa-solid fa-hand-holding-dollar absolute -right-2 -bottom-2 text-[80px] ${isAleyna ? 'text-pink-500/10' : 'text-emerald-500/10'} transform -rotate-12`}></i>
+                            <p className={`${isAleyna ? 'text-pink-600' : 'text-emerald-700'} text-xs font-bold tracking-widest uppercase mb-2 flex items-center gap-2`}>
+                                Toplam Pasif Gelir / Temettü {isAleyna && <span className="text-lg">💖</span>}
+                            </p>
+                            <h2 className={`text-4xl font-black ${isAleyna ? 'text-pink-700' : 'text-emerald-800'} tracking-tighter`}>
+                                {formatCurrency(stats.totalPassiveIncome)}
+                            </h2>
+                            <p className={`mt-3 text-xs font-medium ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}>* Yatırımlarınızın size çalışarak kazandırdığı toplam nakit tutardır.</p>
+                        </div>
+                    </div>
 
-                        {/* EV ADAYLARI GRAFİĞİ */}
-                        {window.Recharts && houseChartData.length > 0 && (
-                            <div className={`bg-white rounded-3xl p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} h-full relative`}>
-                                <div className="peek-anim peek-delay-3 opacity-50">🐸</div>
-                                <h3 className="text-lg font-extrabold text-slate-800 mb-3 flex items-center gap-2">
-                                    <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kiralık Ev Kıyaslaması
-                                </h3>
-                                <div className="h-40 w-full relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={houseChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} />
-                                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8'}} width={50}/>
-                                            <Tooltip formatter={(val) => formatCurrency(val)} cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                            <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} barSize={20} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        )}
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-800 mb-4 px-1 flex items-center gap-2">
+                        <i className={`fa-solid fa-bolt ${isAleyna ? 'text-pink-500' : 'text-amber-500'}`}></i> Akıllı Raporlar
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button onClick={() => showReport('growth')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
+                          <div className={`w-12 h-12 ${isAleyna ? 'bg-pink-50 text-pink-500' : 'bg-emerald-50 text-emerald-600'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}><i className="fa-solid fa-seedling"></i></div>
+                          <div><h4 className="font-extrabold text-slate-800 text-base">Uzun Vadeli Büyüme</h4><p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Aylık ortalama büyüme hızınız ve kar topu etkisi analizi.</p></div>
+                        </button>
+                        <button onClick={() => showReport('allocation')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
+                          <div className={`w-12 h-12 ${isAleyna ? 'bg-purple-50 text-purple-500' : 'bg-indigo-50 text-indigo-600'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}><i className="fa-solid fa-chart-pie"></i></div>
+                          <div><h4 className="font-extrabold text-slate-800 text-base">Varlık Dağılımı</h4><p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Risk profiliniz ve mevcut dağılımınızın güvenilirlik analizi.</p></div>
+                        </button>
+                        <button onClick={() => showReport('inflation')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
+                          <div className={`w-12 h-12 ${isAleyna ? 'bg-rose-50 text-rose-500' : 'bg-amber-50 text-amber-500'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}><i className="fa-solid fa-shield-halved"></i></div>
+                          <div><h4 className="font-extrabold text-slate-800 text-base">Enflasyon & Kur Raporu</h4><p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Portföyünüzün Dolar karşısındaki gerçek reel satın alma gücü.</p></div>
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
@@ -1193,7 +1310,8 @@
 
             {/* --- BÜTÇE SEKME --- */}
             {activeTab === 'budget' && (
-              <div className="space-y-6 pb-6 animate-fade-in">
+              <div className="space-y-6 pb-6 animate-fade-in relative">
+                  
                   <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
                       <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
                           <i className={`fa-solid fa-money-bill-wave ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Maaş Girişi
@@ -1201,10 +1319,7 @@
                       <p className="text-slate-500 text-sm mb-6 font-medium">Yeni maaşınızı girdiğinizde bir önceki dönemin harcamaları sıfırlanır ve yeni bütçe döngünüz başlar.</p>
                       
                       <form onSubmit={handleSaveSalary} className="flex flex-col sm:flex-row gap-4">
-                          <div className="relative flex-1">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                              <input type="number" required placeholder="Aylık toplam yatan maaşı girin" value={salaryAmount} onChange={(e) => setSalaryAmount(e.target.value)} className={`w-full pl-8 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-700 transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-emerald-500/10 focus:border-emerald-500'}`} />
-                          </div>
+                          <CurrencyInput value={salaryAmount} onChange={setSalaryAmount} placeholder="Aylık toplam yatan maaşı girin" isAleyna={isAleyna} />
                           <button type="submit" className={`cute-bounce text-white font-bold py-4 px-8 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'}`}>
                               <i className="fa-solid fa-check"></i> Maaşı Kaydet
                           </button>
@@ -1219,16 +1334,13 @@
                           </h2>
                           <form onSubmit={handleSaveExpense} className="flex flex-col gap-3 mb-6 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
                               <div className="flex gap-2">
-                                  <input type="text" required placeholder="Harcama Adı" value={expenseName} onChange={(e) => setExpenseName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${isAleyna ? 'pink-500' : 'rose-500'}`} />
-                                  <select value={expenseCat} onChange={(e) => setExpenseCat(e.target.value)} className={`w-1/3 px-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-xs transition focus:border-${isAleyna ? 'pink-500' : 'rose-500'}`}>
+                                  <input type="text" required placeholder="Harcama Adı" value={expenseName} onChange={(e) => setExpenseName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-rose-500/10 focus:border-rose-500'}`} />
+                                  <select value={expenseCat} onChange={(e) => setExpenseCat(e.target.value)} className={`w-1/3 px-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-xs transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-rose-500/10 focus:border-rose-500'}`}>
                                       {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                   </select>
                               </div>
                               <div className="flex gap-2">
-                                  <div className="relative flex-1">
-                                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                      <input type="number" required placeholder="Tutar" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${isAleyna ? 'pink-500' : 'rose-500'}`} />
-                                  </div>
+                                  <CurrencyInput value={expenseAmount} onChange={setExpenseAmount} placeholder="Tutar" isAleyna={isAleyna} className={isAleyna ? 'focus:border-pink-500' : 'focus:border-rose-500'} />
                                   <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
                                       Ekle
                                   </button>
@@ -1260,10 +1372,9 @@
                           </h2>
                           <form onSubmit={handleSaveSubscription} className="flex flex-col gap-3 mb-6 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
                               <div className="flex gap-2">
-                                  <input type="text" required placeholder="Netflix, Spotify, Aidat..." value={subName} onChange={(e) => setSubName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${isAleyna ? 'pink-500' : 'blue-500'}`} />
-                                  <div className="relative w-1/3">
-                                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₺</span>
-                                      <input type="number" required placeholder="Aylık" value={subPrice} onChange={(e) => setSubPrice(e.target.value)} className={`w-full pl-6 pr-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${isAleyna ? 'pink-500' : 'blue-500'}`} />
+                                  <input type="text" required placeholder="Netflix, Spotify, Aidat..." value={subName} onChange={(e) => setSubName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-blue-500/10 focus:border-blue-500'}`} />
+                                  <div className="w-1/3">
+                                      <CurrencyInput value={subPrice} onChange={setSubPrice} placeholder="Aylık" isAleyna={isAleyna} className={isAleyna ? 'focus:border-pink-500' : 'focus:border-blue-500'} />
                                   </div>
                               </div>
                               <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center ${isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
@@ -1292,17 +1403,253 @@
               </div>
             )}
 
-            {/* --- MEDYA & KİTAPLIK --- */}
-            {activeTab === 'media' && (
+            {/* --- BORÇLAR TAB --- */}
+            {activeTab === 'debts' && (
+                <div className="space-y-6 pb-6 animate-fade-in relative">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-rose-50 to-pink-100 border-pink-200' : 'from-rose-50 to-red-100 border-rose-200'} rounded-3xl p-5 shadow-sm border relative overflow-hidden`}>
+                            <i className="fa-solid fa-credit-card absolute -right-2 -bottom-2 text-[80px] text-rose-500/10 transform -rotate-12"></i>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Toplam Kalan Borç</p>
+                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-pink-600' : 'text-rose-600'}`}>
+                                {formatCurrency([...activeLoans, ...activeCards].reduce((sum, d) => sum + d.totalAmount, 0))}
+                            </h2>
+                        </div>
+                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-purple-50 to-fuchsia-100 border-fuchsia-200' : 'from-slate-50 to-slate-100 border-slate-200'} rounded-3xl p-5 shadow-sm border relative overflow-hidden`}>
+                            <i className="fa-solid fa-calendar-days absolute -right-2 -bottom-2 text-[80px] text-slate-500/10 transform -rotate-12"></i>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Aylık Ödeme Yükü</p>
+                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-fuchsia-600' : 'text-slate-700'}`}>
+                                {formatCurrency(budgetStats?.totalDebtPayments || 0)}
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
+                            <i className={`fa-solid fa-file-invoice-dollar ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Yeni Borç / Kredi Ekle
+                        </h2>
+                        
+                        <form onSubmit={handleSaveDebt} className="space-y-4 mb-8 bg-slate-50 p-5 rounded-[1.5rem] border border-slate-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <select value={dbtType} onChange={(e) => setDbtType(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
+                                    <option value="loan">🏦 Kredi (Taksitli)</option>
+                                    <option value="card">💳 Kredi Kartı / Diğer Borç</option>
+                                </select>
+                                <input type="text" required placeholder="Borç Adı (Örn: Ziraat Kredi, Kira Borcu)" value={dbtName} onChange={(e) => setDbtName(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                
+                                <CurrencyInput value={dbtTotal} onChange={setDbtTotal} placeholder="Toplam Kalan Borç Tutarı" isAleyna={isAleyna} />
+                                <CurrencyInput value={dbtMonthly} onChange={setDbtMonthly} placeholder="Aylık Ödenecek Tutar" isAleyna={isAleyna} />
+
+                                {dbtType === 'loan' && (
+                                    <>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Ay</span>
+                                            <input type="number" required placeholder="Toplam Vade (Ay)" value={dbtInstallments} onChange={(e) => setDbtInstallments(e.target.value)} className={`w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                        </div>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">%</span>
+                                            <input type="number" step="0.01" placeholder="Aylık Faiz Oranı (Opsiyonel)" value={dbtInterest} onChange={(e) => setDbtInterest(e.target.value)} className={`w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                                <i className="fa-solid fa-plus"></i> Borcu Kaydet
+                            </button>
+                        </form>
+
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Aktif Krediler</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {activeLoans.map(d => {
+                                const progress = Math.min((d.paidInstallments / d.totalInstallments) * 100, 100);
+                                return (
+                                <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
+                                    <button onClick={() => handleDeleteDocument(d.id, 'Kredi silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
+                                        <i className="fa-solid fa-trash-can"></i>
+                                    </button>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 pr-6 mb-1"><i className="fa-solid fa-building-columns text-slate-400 mr-1"></i> {d.name}</h4>
+                                        <p className="text-xs text-slate-500 font-medium mb-3">Aylık: <b>{formatCurrency(d.monthlyPayment)}</b> {d.interestRate > 0 && `| Faiz: %${d.interestRate}`}</p>
+                                        
+                                        <div className="w-full bg-slate-100 rounded-full h-2.5 mb-1 overflow-hidden">
+                                            <div className={`bg-${themeColor}-500 h-2.5 rounded-full transition-all`} style={{ width: `${progress}%` }}></div>
+                                        </div>
+                                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-4">
+                                            <span>{d.paidInstallments} / {d.totalInstallments} Ay Ödendi</span>
+                                            <span>Kalan: {formatCurrency(d.totalAmount)}</span>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => handlePayLoanInstallment(d)} className={`cute-bounce w-full bg-${themeColor}-50 text-${themeColor}-600 font-bold py-2 rounded-xl border border-${themeColor}-100 hover:bg-${themeColor}-100 transition text-sm`}>
+                                        Taksiti Öde (Düş)
+                                    </button>
+                                </div>
+                            )})}
+                            {activeLoans.length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Aktif kredi bulunmuyor.</p>}
+                        </div>
+
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Kredi Kartı & Diğer Borçlar</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {activeCards.map(d => (
+                                <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
+                                    <button onClick={() => handleDeleteDocument(d.id, 'Borç silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
+                                        <i className="fa-solid fa-trash-can"></i>
+                                    </button>
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 pr-6 mb-1"><i className="fa-regular fa-credit-card text-slate-400 mr-1"></i> {d.name}</h4>
+                                        <p className="text-xs text-slate-500 font-medium mb-3">Aylık Planlanan Ödeme: <b>{formatCurrency(d.monthlyPayment)}</b></p>
+                                        <p className="text-2xl font-black text-rose-500 mb-4">{formatCurrency(d.totalAmount)}</p>
+                                    </div>
+                                    <button onClick={() => handlePayCardDebt(d)} className={`cute-bounce w-full bg-${themeColor}-50 text-${themeColor}-600 font-bold py-2 rounded-xl border border-${themeColor}-100 hover:bg-${themeColor}-100 transition text-sm`}>
+                                        Ödeme Gir (Borçtan Düş)
+                                    </button>
+                                </div>
+                            ))}
+                            {activeCards.length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Kredi kartı borcu bulunmuyor.</p>}
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* --- EV BAKMACA TAB --- */}
+            {activeTab === 'houses' && (
+                <div className="space-y-6 pb-6 animate-fade-in relative">
+                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
+                            <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> {isAleyna ? 'Ev Bakmaca 🏡💖' : 'Kiralık Ev Adayları'}
+                        </h2>
+                        
+                        <form onSubmit={handleSaveHouse} className="space-y-4 mb-8 bg-slate-50 p-5 rounded-[1.5rem] border border-slate-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="text" required placeholder="Ev Başlığı (Örn: Beşiktaş 2+1 Sahibinden)" value={hTitle} onChange={(e) => setHTitle(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                <CurrencyInput value={hPrice} onChange={setHPrice} placeholder="Kira Fiyatı" isAleyna={isAleyna} />
+                                <input type="url" placeholder="İlan Linki (Sahibinden, Hepsiemlak vb.)" value={hLink} onChange={(e) => setHLink(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="Semt / Adres" value={hAddress} onChange={(e) => setHAddress(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                    <select value={hRating} onChange={(e) => setHRating(e.target.value)} className={`px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
+                                        <option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                                <i className="fa-solid fa-plus"></i> Listeye Ekle
+                            </button>
+                        </form>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {houses.map(h => (
+                                <div key={h.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
+                                    <button onClick={() => handleDeleteDocument(h.id, 'Ev silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
+                                        <i className="fa-solid fa-trash-can"></i>
+                                    </button>
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-bold text-slate-800 pr-6">{h.title}</h4>
+                                        </div>
+                                        <p className="text-xs text-slate-500 font-medium mb-3"><i className="fa-solid fa-location-dot mr-1"></i> {h.address || 'Adres girilmedi'}</p>
+                                        <p className="text-amber-400 text-sm mb-4">{'⭐'.repeat(h.rating)}</p>
+                                    </div>
+                                    <div className="flex justify-between items-end border-t border-slate-100 pt-4 mt-2">
+                                        <span className={`text-xl font-black text-${themeColor}-600`}>{formatCurrency(h.price)}</span>
+                                        {h.link && (
+                                            <a href={h.link} target="_blank" className={`text-xs font-bold bg-${themeColor}-50 text-${themeColor}-700 px-3 py-2 rounded-lg hover:bg-${themeColor}-100 transition`}>
+                                                İlana Git <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {houses.length === 0 && <p className="col-span-full text-center text-sm text-slate-400 italic py-6">Henüz kaydedilmiş bir ev adayı yok.</p>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- ÇEYİZ TAB --- */}
+            {activeTab === 'dowry' && (
                 <div className="space-y-6 pb-6 animate-fade-in">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-200' : 'from-emerald-50 to-teal-50 border-emerald-200'} rounded-3xl p-5 shadow-sm border`}>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Toplam Harcanan (Alınanlar)</p>
+                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-pink-600' : 'text-emerald-600'}`}>{formatCurrency(dowrySpent)}</h2>
+                        </div>
+                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-purple-50 to-indigo-50 border-purple-200' : 'from-amber-50 to-orange-50 border-amber-200'} rounded-3xl p-5 shadow-sm border`}>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Tahmini Kalan (Alınacaklar)</p>
+                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-purple-600' : 'text-amber-600'}`}>{formatCurrency(dowryPending)}</h2>
+                        </div>
+                    </div>
+
+                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
+                            <i className={`fa-solid fa-ring ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> {isAleyna ? 'Çeyiz Listemiz 🎁' : 'Eşya & Çeyiz Listesi'}
+                        </h2>
+                        
+                        <form onSubmit={handleSaveDowry} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
+                            <input type="text" required placeholder="Ürün Adı (Örn: Karaca Tencere Seti)" value={dName} onChange={(e) => setDName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                            <div className="md:w-48">
+                                <CurrencyInput value={dPrice} onChange={setDPrice} placeholder="Fiyat" isAleyna={isAleyna} />
+                            </div>
+                            <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
+                                <option value="alinacak">Alınacak</option>
+                                <option value="alindi">Alındı ✅</option>
+                            </select>
+                            <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
+                                Ekle
+                            </button>
+                        </form>
+
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Alınacaklar Listesi</h4>
+                                <div className="space-y-2">
+                                    {dowryItems.filter(d => d.status === 'alinacak').map(item => (
+                                        <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl hover:border-slate-300 transition">
+                                            <div className="flex items-center gap-3">
+                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alindi', 'Ürün alındı olarak işaretlendi! 🎉')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center"></button>
+                                                <span className="font-bold text-slate-700">{item.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-black text-slate-500">{formatCurrency(item.price)}</span>
+                                                <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {dowryItems.filter(d => d.status === 'alinacak').length === 0 && <p className="text-xs text-slate-400 italic">Alınacak ürün bulunmuyor.</p>}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Alınanlar ✅</h4>
+                                <div className="space-y-2">
+                                    {dowryItems.filter(d => d.status === 'alindi').map(item => (
+                                        <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-xl opacity-70 hover:opacity-100 transition">
+                                            <div className="flex items-center gap-3">
+                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alinacak', 'Ürün geri alındı.')} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center"><i className="fa-solid fa-check text-xs"></i></button>
+                                                <span className="font-bold text-slate-500 line-through-anim">{item.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-black text-emerald-600">{formatCurrency(item.price)}</span>
+                                                <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MEDYA TAB --- */}
+            {activeTab === 'media' && (
+                <div className="space-y-6 pb-6 animate-fade-in relative">
                     <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
                             <i className={`fa-solid fa-book-open-reader ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Eğlence & Kitaplık
                         </h2>
                         
                         <form onSubmit={handleSaveMedia} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
-                            <input type="text" required placeholder="Film, Kitap veya Oyun Adı" value={mTitle} onChange={(e) => setMTitle(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                            <select value={mType} onChange={(e) => setMType(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`}>
+                            <input type="text" required placeholder="Film, Kitap, Dizi veya Oyun Adı" value={mTitle} onChange={(e) => setMTitle(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                            <select value={mType} onChange={(e) => setMType(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
                                 <option value="film">🎬 Film</option>
                                 <option value="dizi">📺 Dizi</option>
                                 <option value="oyun">🎮 Oyun</option>
@@ -1314,7 +1661,6 @@
                         </form>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* BEKLEYENLER */}
                             <div>
                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Sıradakiler / Okunacaklar</h4>
                                 <div className="space-y-2">
@@ -1332,7 +1678,6 @@
                                 </div>
                             </div>
                             
-                            {/* BİTENLER */}
                             <div>
                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Tamamlananlar ✅</h4>
                                 <div className="space-y-2">
@@ -1373,51 +1718,30 @@
                       
                       <div className={`bg-gradient-to-r ${isAleyna ? 'from-pink-50 to-white border-pink-200' : 'from-emerald-50 to-white border-emerald-200'} border p-5 rounded-[1.5rem]`}>
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className={`fa-solid fa-hand-holding-dollar ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}></i> Bu Ayki Pasif Gelir / Temettü</h3>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                            <input type="number" placeholder="Bu ay hisse veya faizden elde edilen nakit getiriyi yazın (İsteğe Bağlı)" value={passiveIncome} onChange={(e) => setPassiveIncome(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm ${isAleyna ? 'focus:border-pink-500' : 'focus:border-emerald-500'}`} />
-                        </div>
+                        <CurrencyInput value={passiveIncome} onChange={setPassiveIncome} placeholder="Bu ay hisse veya faizden elde edilen nakit getiriyi yazın (İsteğe Bağlı)" isAleyna={isAleyna} />
                       </div>
 
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-piggy-bank text-emerald-500"></i> Para Piyasası / Mevduat</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" placeholder="Yatırılan Maliyet" value={mmfInvested} onChange={(e) => setMmfInvested(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-700 text-sm" />
-                            </div>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" placeholder="Güncel Değer" value={mmfCurrent} onChange={(e) => setMmfCurrent(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-700 text-sm" />
-                            </div>
+                            <CurrencyInput value={mmfInvested} onChange={setMmfInvested} placeholder="Yatırılan Maliyet" isAleyna={isAleyna} />
+                            <CurrencyInput value={mmfCurrent} onChange={setMmfCurrent} placeholder="Güncel Değer" isAleyna={isAleyna} />
                         </div>
                       </div>
 
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-coins text-amber-400"></i> Altın Fonları / Fiziksel</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" placeholder="Yatırılan Maliyet" value={goldInvested} onChange={(e) => setGoldInvested(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-amber-400 font-bold text-slate-700 text-sm" />
-                            </div>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" placeholder="Güncel Değer" value={goldCurrent} onChange={(e) => setGoldCurrent(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-amber-400 font-bold text-slate-700 text-sm" />
-                            </div>
+                            <CurrencyInput value={goldInvested} onChange={setGoldInvested} placeholder="Yatırılan Maliyet" isAleyna={isAleyna} />
+                            <CurrencyInput value={goldCurrent} onChange={setGoldCurrent} placeholder="Güncel Değer" isAleyna={isAleyna} />
                         </div>
                       </div>
 
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-dollar-sign text-blue-500"></i> Döviz Fonları / Eurobond</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" placeholder="Yatırılan (TL)" value={fxInvested} onChange={(e) => setFxInvested(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-700 text-sm" />
-                            </div>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" placeholder="Güncel (TL)" value={fxCurrent} onChange={(e) => setFxCurrent(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-700 text-sm" />
-                            </div>
+                            <CurrencyInput value={fxInvested} onChange={setFxInvested} placeholder="Yatırılan (TL)" isAleyna={isAleyna} />
+                            <CurrencyInput value={fxCurrent} onChange={setFxCurrent} placeholder="Güncel (TL)" isAleyna={isAleyna} />
                         </div>
                       </div>
 
@@ -1438,11 +1762,11 @@
                                 <i className="fa-solid fa-xmark text-xs"></i>
                               </button>
                               <div className="flex-1">
-                                <input type="text" placeholder="Hisse Kodu" value={stock.name} onChange={(e) => handleStockChange(stock.id, 'name', e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-rose-400" />
+                                <input type="text" placeholder="Hisse Kodu" value={stock.name} onChange={(e) => handleStockChange(stock.id, 'name', e.target.value)} className={`w-full px-3 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-rose-500/10 focus:border-rose-500'}`} />
                               </div>
                               <div className="flex-1 flex gap-2">
-                                  <input type="number" placeholder="Yatırılan" value={stock.invested} onChange={(e) => handleStockChange(stock.id, 'invested', e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-rose-400" />
-                                  <input type="number" placeholder="Güncel" value={stock.current} onChange={(e) => handleStockChange(stock.id, 'current', e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-rose-400" />
+                                  <CurrencyInput value={stock.invested} onChange={(val) => handleStockChange(stock.id, 'invested', val)} placeholder="Yatırılan" isAleyna={isAleyna} />
+                                  <CurrencyInput value={stock.current} onChange={(val) => handleStockChange(stock.id, 'current', val)} placeholder="Güncel" isAleyna={isAleyna} />
                               </div>
                             </div>
                           ))}
@@ -1518,312 +1842,6 @@
                   )}
                 </div>
               </div>
-            )}
-            
-            {/* YENİ MODÜLLER: BORÇLAR, EVLER, ÇEYİZ (Önceden vardı, yeri korundu) */}
-            {activeTab === 'debts' && (
-                <div className="space-y-6 pb-6 animate-fade-in relative">
-                    <div className="peek-anim peek-delay-1 opacity-50">🐸</div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-rose-50 to-pink-100 border-pink-200' : 'from-rose-50 to-red-100 border-rose-200'} rounded-3xl p-5 shadow-sm border relative overflow-hidden`}>
-                            <i className="fa-solid fa-credit-card absolute -right-2 -bottom-2 text-[80px] text-rose-500/10 transform -rotate-12"></i>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Toplam Kalan Borç</p>
-                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-pink-600' : 'text-rose-600'}`}>
-                                {formatCurrency([...activeLoans, ...activeCards].reduce((sum, d) => sum + d.totalAmount, 0))}
-                            </h2>
-                        </div>
-                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-purple-50 to-fuchsia-100 border-fuchsia-200' : 'from-slate-50 to-slate-100 border-slate-200'} rounded-3xl p-5 shadow-sm border relative overflow-hidden`}>
-                            <i className="fa-solid fa-calendar-days absolute -right-2 -bottom-2 text-[80px] text-slate-500/10 transform -rotate-12"></i>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Aylık Ödeme Yükü</p>
-                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-fuchsia-600' : 'text-slate-700'}`}>
-                                {formatCurrency(budgetStats?.totalDebtPayments || 0)}
-                            </h2>
-                        </div>
-                    </div>
-
-                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                            <i className={`fa-solid fa-file-invoice-dollar ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Yeni Borç / Kredi Ekle
-                        </h2>
-                        
-                        <form onSubmit={handleSaveDebt} className="space-y-4 mb-8 bg-slate-50 p-5 rounded-[1.5rem] border border-slate-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <select value={dbtType} onChange={(e) => setDbtType(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`}>
-                                    <option value="loan">🏦 Kredi (Taksitli)</option>
-                                    <option value="card">💳 Kredi Kartı / Diğer Borç</option>
-                                </select>
-                                <input type="text" required placeholder="Borç Adı (Örn: Ziraat Kredi, Kira Borcu)" value={dbtName} onChange={(e) => setDbtName(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                    <input type="number" required placeholder="Toplam Kalan Borç Tutarı" value={dbtTotal} onChange={(e) => setDbtTotal(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                </div>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                    <input type="number" required placeholder="Aylık Ödenecek Tutar" value={dbtMonthly} onChange={(e) => setDbtMonthly(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                </div>
-
-                                {dbtType === 'loan' && (
-                                    <>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Ay</span>
-                                            <input type="number" required placeholder="Toplam Vade (Ay)" value={dbtInstallments} onChange={(e) => setDbtInstallments(e.target.value)} className={`w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                        </div>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">%</span>
-                                            <input type="number" step="0.01" placeholder="Aylık Faiz Oranı (Opsiyonel)" value={dbtInterest} onChange={(e) => setDbtInterest(e.target.value)} className={`w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
-                                <i className="fa-solid fa-plus"></i> Borcu Kaydet
-                            </button>
-                        </form>
-
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Aktif Krediler</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {activeLoans.map(d => {
-                                const progress = Math.min((d.paidInstallments / d.totalInstallments) * 100, 100);
-                                return (
-                                <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
-                                    <button onClick={() => handleDeleteDocument(d.id, 'Kredi silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
-                                        <i className="fa-solid fa-trash-can"></i>
-                                    </button>
-                                    <div>
-                                        <h4 className="font-bold text-slate-800 pr-6 mb-1"><i className="fa-solid fa-building-columns text-slate-400 mr-1"></i> {d.name}</h4>
-                                        <p className="text-xs text-slate-500 font-medium mb-3">Aylık: <b>{formatCurrency(d.monthlyPayment)}</b> {d.interestRate > 0 && `| Faiz: %${d.interestRate}`}</p>
-                                        
-                                        <div className="w-full bg-slate-100 rounded-full h-2.5 mb-1 overflow-hidden">
-                                            <div className={`bg-${themeColor}-500 h-2.5 rounded-full transition-all`} style={{ width: `${progress}%` }}></div>
-                                        </div>
-                                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-4">
-                                            <span>{d.paidInstallments} / {d.totalInstallments} Ay Ödendi</span>
-                                            <span>Kalan: {formatCurrency(d.totalAmount)}</span>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => handlePayLoanInstallment(d)} className={`cute-bounce w-full bg-${themeColor}-50 text-${themeColor}-600 font-bold py-2 rounded-xl border border-${themeColor}-100 hover:bg-${themeColor}-100 transition text-sm`}>
-                                        Taksiti Öde (Düş)
-                                    </button>
-                                </div>
-                            )})}
-                            {activeLoans.length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Aktif kredi bulunmuyor.</p>}
-                        </div>
-
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Kredi Kartı & Diğer Borçlar</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {activeCards.map(d => (
-                                <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
-                                    <button onClick={() => handleDeleteDocument(d.id, 'Borç silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
-                                        <i className="fa-solid fa-trash-can"></i>
-                                    </button>
-                                    <div>
-                                        <h4 className="font-bold text-slate-800 pr-6 mb-1"><i className="fa-regular fa-credit-card text-slate-400 mr-1"></i> {d.name}</h4>
-                                        <p className="text-xs text-slate-500 font-medium mb-3">Aylık Planlanan Ödeme: <b>{formatCurrency(d.monthlyPayment)}</b></p>
-                                        <p className="text-2xl font-black text-rose-500 mb-4">{formatCurrency(d.totalAmount)}</p>
-                                    </div>
-                                    <button onClick={() => handlePayCardDebt(d)} className={`cute-bounce w-full bg-${themeColor}-50 text-${themeColor}-600 font-bold py-2 rounded-xl border border-${themeColor}-100 hover:bg-${themeColor}-100 transition text-sm`}>
-                                        Ödeme Gir (Borçtan Düş)
-                                    </button>
-                                </div>
-                            ))}
-                            {activeCards.length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Kredi kartı borcu bulunmuyor.</p>}
-                        </div>
-
-                    </div>
-                </div>
-            )}
-
-            {activeTab === 'houses' && (
-                <div className="space-y-6 pb-6 animate-fade-in relative">
-                    <div className="peek-anim text-3xl opacity-50">🦖</div>
-                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                            <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> {isAleyna ? 'Ev Bakmaca 🏡💖' : 'Kiralık Ev Adayları'}
-                        </h2>
-                        
-                        <form onSubmit={handleSaveHouse} className="space-y-4 mb-8 bg-slate-50 p-5 rounded-[1.5rem] border border-slate-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input type="text" required placeholder="Ev Başlığı (Örn: Beşiktaş 2+1 Sahibinden)" value={hTitle} onChange={(e) => setHTitle(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                    <input type="number" required placeholder="Kira Fiyatı" value={hPrice} onChange={(e) => setHPrice(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                </div>
-                                <input type="url" placeholder="İlan Linki (Sahibinden, Hepsiemlak vb.)" value={hLink} onChange={(e) => setHLink(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                <div className="flex gap-2">
-                                    <input type="text" placeholder="Semt / Adres" value={hAddress} onChange={(e) => setHAddress(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                                    <select value={hRating} onChange={(e) => setHRating(e.target.value)} className={`px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`}>
-                                        <option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button type="submit" className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
-                                <i className="fa-solid fa-plus"></i> Listeye Ekle
-                            </button>
-                        </form>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {houses.map(h => (
-                                <div key={h.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
-                                    <button onClick={() => handleDeleteDocument(h.id, 'Ev silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
-                                        <i className="fa-solid fa-trash-can"></i>
-                                    </button>
-                                    <div>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-slate-800 pr-6">{h.title}</h4>
-                                        </div>
-                                        <p className="text-xs text-slate-500 font-medium mb-3"><i className="fa-solid fa-location-dot mr-1"></i> {h.address || 'Adres girilmedi'}</p>
-                                        <p className="text-amber-400 text-sm mb-4">{'⭐'.repeat(h.rating)}</p>
-                                    </div>
-                                    <div className="flex justify-between items-end border-t border-slate-100 pt-4 mt-2">
-                                        <span className={`text-xl font-black text-${themeColor}-600`}>{formatCurrency(h.price)}</span>
-                                        {h.link && (
-                                            <a href={h.link} target="_blank" className={`text-xs font-bold bg-${themeColor}-50 text-${themeColor}-700 px-3 py-2 rounded-lg hover:bg-${themeColor}-100 transition`}>
-                                                İlana Git <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                            {houses.length === 0 && <p className="col-span-full text-center text-sm text-slate-400 italic py-6">Henüz kaydedilmiş bir ev adayı yok.</p>}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {activeTab === 'dowry' && (
-                <div className="space-y-6 pb-6 animate-fade-in">
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-200' : 'from-emerald-50 to-teal-50 border-emerald-200'} rounded-3xl p-5 shadow-sm border`}>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Toplam Harcanan (Alınanlar)</p>
-                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-pink-600' : 'text-emerald-600'}`}>{formatCurrency(dowrySpent)}</h2>
-                        </div>
-                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-purple-50 to-indigo-50 border-purple-200' : 'from-amber-50 to-orange-50 border-amber-200'} rounded-3xl p-5 shadow-sm border`}>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Tahmini Kalan (Alınacaklar)</p>
-                            <h2 className={`text-2xl font-black ${isAleyna ? 'text-purple-600' : 'text-amber-600'}`}>{formatCurrency(dowryPending)}</h2>
-                        </div>
-                    </div>
-
-                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                            <i className={`fa-solid fa-ring ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> {isAleyna ? 'Çeyiz Listemiz 🎁' : 'Eşya & Çeyiz Listesi'}
-                        </h2>
-                        
-                        <form onSubmit={handleSaveDowry} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
-                            <input type="text" required placeholder="Ürün Adı (Örn: Karaca Tencere Seti)" value={dName} onChange={(e) => setDName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                            <div className="relative md:w-32">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
-                                <input type="number" required placeholder="Fiyat" value={dPrice} onChange={(e) => setDPrice(e.target.value)} className={`w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                            </div>
-                            <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`}>
-                                <option value="alinacak">Alınacak</option>
-                                <option value="alindi">Alındı ✅</option>
-                            </select>
-                            <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
-                                Ekle
-                            </button>
-                        </form>
-
-                        <div className="space-y-6">
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Alınacaklar Listesi</h4>
-                                <div className="space-y-2">
-                                    {dowryItems.filter(d => d.status === 'alinacak').map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl hover:border-slate-300 transition">
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alindi', 'Ürün alındı olarak işaretlendi! 🎉')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center"></button>
-                                                <span className="font-bold text-slate-700">{item.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <span className="font-black text-slate-500">{formatCurrency(item.price)}</span>
-                                                <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {dowryItems.filter(d => d.status === 'alinacak').length === 0 && <p className="text-xs text-slate-400 italic">Alınacak ürün bulunmuyor.</p>}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Alınanlar ✅</h4>
-                                <div className="space-y-2">
-                                    {dowryItems.filter(d => d.status === 'alindi').map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-xl opacity-70 hover:opacity-100 transition">
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alinacak', 'Ürün geri alındı.')} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center"><i className="fa-solid fa-check text-xs"></i></button>
-                                                <span className="font-bold text-slate-500 line-through-anim">{item.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <span className="font-black text-emerald-600">{formatCurrency(item.price)}</span>
-                                                <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {activeTab === 'media' && (
-                <div className="space-y-6 pb-6 animate-fade-in relative">
-                    <div className="peek-anim peek-delay-2 opacity-50">🐱</div>
-                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                            <i className={`fa-solid fa-book-open-reader ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Eğlence & Kitaplık
-                        </h2>
-                        
-                        <form onSubmit={handleSaveMedia} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
-                            <input type="text" required placeholder="Film, Kitap, Dizi veya Oyun Adı" value={mTitle} onChange={(e) => setMTitle(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`} />
-                            <select value={mType} onChange={(e) => setMType(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:border-${themeColor}-500`}>
-                                <option value="film">🎬 Film</option>
-                                <option value="dizi">📺 Dizi</option>
-                                <option value="oyun">🎮 Oyun</option>
-                                <option value="kitap">📚 Kitap</option>
-                            </select>
-                            <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
-                                Raf'a Ekle
-                            </button>
-                        </form>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Sıradakiler / Okunacaklar</h4>
-                                <div className="space-y-2">
-                                    {mediaItems.filter(m => m.status === 'bekliyor').map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl hover:border-indigo-300 transition">
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'bitti', 'Tamamlandı olarak işaretlendi! 🍿')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-indigo-500 hover:bg-indigo-50 transition"></button>
-                                                <span className="font-bold text-slate-700">{item.title}</span>
-                                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md text-slate-500 uppercase">{item.mediaType}</span>
-                                            </div>
-                                            <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
-                                        </div>
-                                    ))}
-                                    {mediaItems.filter(m => m.status === 'bekliyor').length === 0 && <p className="text-xs text-slate-400 italic">Bekleyen kayıt yok.</p>}
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Tamamlananlar ✅</h4>
-                                <div className="space-y-2">
-                                    {mediaItems.filter(m => m.status === 'bitti').map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-xl opacity-70">
-                                            <div className="flex items-center gap-3">
-                                                <i className="fa-solid fa-check text-emerald-500"></i>
-                                                <span className="font-bold text-slate-500 line-through-anim">{item.title}</span>
-                                            </div>
-                                            <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
             )}
 
           </main>

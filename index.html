@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Can & Aleyna Life ERP</title>
+  <title>Ali & Aleyna Life ERP</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -97,20 +97,20 @@
 
   <!-- FIREBASE BAĞLANTISI -->
   <script type="module">
-    import { initiCanzeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCXXP89y1yy9zBzvd7zeh7cWxCIrtegTpg",
-      authDomain: "Canaleynaportfoy.firebaseapp.com",
-      projectId: "Canaleynaportfoy",
-      storageBucket: "Canaleynaportfoy.firebasestorage.app",
+      authDomain: "alialeynaportfoy.firebaseapp.com",
+      projectId: "alialeynaportfoy",
+      storageBucket: "alialeynaportfoy.firebasestorage.app",
       messagingSenderId: "173177562821",
       appId: "1:173177562821:web:54c7e1a705438b030732ac"
     };
 
-    const app = initiCanzeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
@@ -124,7 +124,7 @@
     const { useState, useEffect, useMemo } = React;
     const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, BarChart, Bar, Legend } = window.Recharts || {};
 
-    const ALLOWED_EMAILS = ['Cankaya4275@gmail.com', 'aleynaerdn2294@gmail.com'];
+    const ALLOWED_EMAILS = ['alikaya4275@gmail.com', 'aleynaerdn2294@gmail.com'];
     const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Yol/Ulaşım', 'Diğer'];
     const CHART_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b', '#84cc16'];
     const MOTIVATIONAL_QUOTES = [
@@ -255,6 +255,7 @@
 
       if (!isOpen) return null;
 
+     
       const slides = [
         "Hoşgeldin gülüm 🌸",
         "Seni sevdiğimi söylemiş miydim ? ☀️",
@@ -319,16 +320,16 @@
       const [stocks, setStocks] = useState([]);
 
       // Form States (Maaş/Bütçe)
-      const [CanSalary, setCanSalary] = useState(''); const [aleynaSalary, setAleynaSalary] = useState('');
-      const [CanFood, setCanFood] = useState(''); const [aleynaFood, setAleynaFood] = useState('');
-      const [CanTransport, setCanTransport] = useState(''); const [aleynaTransport, setAleynaTransport] = useState('');
+      const [aliSalary, setAliSalary] = useState(''); const [aleynaSalary, setAleynaSalary] = useState('');
+      const [aliFood, setAliFood] = useState(''); const [aleynaFood, setAleynaFood] = useState('');
+      const [aliTransport, setAliTransport] = useState(''); const [aleynaTransport, setAleynaTransport] = useState('');
       const [expenseName, setExpenseName] = useState(''); const [expenseAmount, setExpenseAmount] = useState('');
       const [expenseCat, setExpenseCat] = useState('Market'); const [expenseOwner, setExpenseOwner] = useState('Ortak');
 
       // Form States (Diğerleri)
       const [engDateInput, setEngDateInput] = useState(''); const [marDateInput, setMarDateInput] = useState(''); const [targetAmountInput, setTargetAmountInput] = useState(''); 
       const [hTitle, setHTitle] = useState(''); const [hPrice, setHPrice] = useState(''); const [hLink, setHLink] = useState(''); const [hAddress, setHAddress] = useState(''); const [hRating, setHRating] = useState('3');
-      const [dName, setDName] = useState(''); const [dPrice, setDPrice] = useState(''); const [dStatus, setDStatus] = useState('Cannacak');
+      const [dName, setDName] = useState(''); const [dPrice, setDPrice] = useState(''); const [dStatus, setDStatus] = useState('alinacak');
       const [mTitle, setMTitle] = useState(''); const [mType, setMType] = useState('film'); const [mStatus, setMStatus] = useState('bekliyor');
       const [dbtName, setDbtName] = useState(''); const [dbtType, setDbtType] = useState('loan'); const [dbtTotal, setDbtTotal] = useState(''); const [dbtMonthly, setDbtMonthly] = useState(''); const [dbtInstallments, setDbtInstallments] = useState(''); const [dbtInterest, setDbtInterest] = useState('');
       const [subName, setSubName] = useState(''); const [subPrice, setSubPrice] = useState('');
@@ -371,7 +372,7 @@
           if (currentUser) {
               if (!ALLOWED_EMAILS.includes(currentUser.email)) {
                   await signOut(auth); setUser(null);
-                  showToast("Erişim Reddedildi: Bu alana sadece Can ve Aleyna girebilir 🔒", "error");
+                  showToast("Erişim Reddedildi: Bu alana sadece Ali ve Aleyna girebilir 🔒", "error");
                   setLoading(false); return;
               }
               setUser(currentUser);
@@ -443,13 +444,13 @@
               currentExpenses.reduce((acc, ex) => { acc[ex.category || 'Diğer'] = (acc[ex.category || 'Diğer'] || 0) + ex.amount; return acc; }, {})
           ).map(([name, value]) => ({ name, value }));
 
-          const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totCannstallments || 0));
+          const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totalInstallments || 0));
           const activeCards = debts.filter(d => d.debtType === 'card' && d.totalAmount > 0);
           const totalDebtPayments = [...activeLoans, ...activeCards].reduce((sum, d) => sum + (d.monthlyPayment || 0), 0);
           const totalSubPayments = subscriptions.reduce((sum, sub) => sum + (sub.price || 0), 0);
 
-          // ERP MANTIĞI: Yemek ve Yol "Yan Hak" olduğu için asıl maaş kasasına GİRMEZ. Bütçe sadece Can ve Aleyna'nın "Ana Maaşı" üzerinden döner.
-          const coreSalary = (latestSalary.CanSalary || 0) + (latestSalary.aleynaSalary || 0);
+          // ERP MANTIĞI: Yemek ve Yol "Yan Hak" olduğu için asıl maaş kasasına GİRMEZ. Bütçe sadece Ali ve Aleyna'nın "Ana Maaşı" üzerinden döner.
+          const coreSalary = (latestSalary.aliSalary || 0) + (latestSalary.aleynaSalary || 0);
           const totalFixedExpenses = totalDebtPayments + totalSubPayments;
           const remainingSalary = coreSalary - totalExpenseAmount - totalFixedExpenses;
 
@@ -472,8 +473,8 @@
               if(entryBeforeSalary) {
                   baseInvested = (entryBeforeSalary.mmfInvested||0) + (entryBeforeSalary.goldInvested||0) + (entryBeforeSalary.fxInvested||0) + (entryBeforeSalary.stocks||[]).reduce((s,x)=>s+(x.invested||0),0);
               }
-              const currentTotCannvested = ((latestEntry.mmfInvested||0) + (latestEntry.goldInvested||0) + (latestEntry.fxInvested||0) + (latestEntry.stocks||[]).reduce((s,x)=>s+(x.invested||0),0));
-              newlyInvested = Math.max(0, currentTotCannvested - baseInvested);
+              const currentTotalInvested = ((latestEntry.mmfInvested||0) + (latestEntry.goldInvested||0) + (latestEntry.fxInvested||0) + (latestEntry.stocks||[]).reduce((s,x)=>s+(x.invested||0),0));
+              newlyInvested = Math.max(0, currentTotalInvested - baseInvested);
               investedPercent = (newlyInvested / coreSalary) * 100;
           }
 
@@ -501,8 +502,8 @@
       }, [sortedEntries]);
 
       // Çeyiz, Ev & Medya Datası
-      const dowrySpent = dowryItems.filter(d => d.status === 'Canndi').reduce((s, d) => s + (d.price || 0), 0);
-      const dowryPending = dowryItems.filter(d => d.status === 'Cannacak').reduce((s, d) => s + (d.price || 0), 0);
+      const dowrySpent = dowryItems.filter(d => d.status === 'alindi').reduce((s, d) => s + (d.price || 0), 0);
+      const dowryPending = dowryItems.filter(d => d.status === 'alinacak').reduce((s, d) => s + (d.price || 0), 0);
       const dowryChartData = [{ name: 'Alındı', value: dowrySpent }, { name: 'Alınacak', value: dowryPending }];
       const houseChartData = useMemo(() => houses.slice(0, 5).map(h => ({ name: h.title.length > 10 ? h.title.substring(0, 10)+'..' : h.title, Fiyat: h.price })), [houses]);
       const mediaStatsData = useMemo(() => {
@@ -514,17 +515,17 @@
       // --- PORTFÖY ÖZETİ ---
       const getStats = () => {
         if (!latestEntry) return null;
-        const totCannvested = (latestEntry.mmfInvested || 0) + (latestEntry.goldInvested || 0) + (latestEntry.fxInvested || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.invested || 0), 0) + (latestEntry.emergencyFund || 0);
+        const totalInvested = (latestEntry.mmfInvested || 0) + (latestEntry.goldInvested || 0) + (latestEntry.fxInvested || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.invested || 0), 0) + (latestEntry.emergencyFund || 0);
         const totalCurrent = (latestEntry.mmfCurrent || 0) + (latestEntry.goldCurrent || 0) + (latestEntry.fxCurrent || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0) + (latestEntry.emergencyFund || 0);
-        const totalProfit = totalCurrent - totCannvested;
-        const totalProfitPercent = totCannvested > 0 ? (totalProfit / totCannvested) * 100 : 0;
+        const totalProfit = totalCurrent - totalInvested;
+        const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
         const totalPassiveIncome = entries.reduce((sum, e) => sum + (e.passiveIncome || 0), 0);
         
         const mmfRatio = totalCurrent > 0 ? ((latestEntry.mmfCurrent || 0) / totalCurrent) * 100 : 0;
         const goldRatio = totalCurrent > 0 ? ((latestEntry.goldCurrent || 0) / totalCurrent) * 100 : 0;
         const fxRatio = totalCurrent > 0 ? ((latestEntry.fxCurrent || 0) / totalCurrent) * 100 : 0;
         const stockRatio = totalCurrent > 0 ? (((latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0)) / totalCurrent) * 100 : 0;
-        return { totCannvested, totalCurrent, totalProfit, totalProfitPercent, mmfRatio, goldRatio, fxRatio, stockRatio, totalPassiveIncome };
+        return { totalInvested, totalCurrent, totalProfit, totalProfitPercent, mmfRatio, goldRatio, fxRatio, stockRatio, totalPassiveIncome };
       };
       const stats = getStats();
 
@@ -570,11 +571,11 @@
             const { db, doc, setDoc } = window.firebaseApp; const id = 'sal_' + Date.now();
             await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
                 id, type: 'salary', date: new Date().toISOString().split('T')[0],
-                CanSalary: parseCurrency(CanSalary), aleynaSalary: parseCurrency(aleynaSalary),
-                CanFood: parseCurrency(CanFood), aleynaFood: parseCurrency(aleynaFood),
-                CanTransport: parseCurrency(CanTransport), aleynaTransport: parseCurrency(aleynaTransport),
+                aliSalary: parseCurrency(aliSalary), aleynaSalary: parseCurrency(aleynaSalary),
+                aliFood: parseCurrency(aliFood), aleynaFood: parseCurrency(aleynaFood),
+                aliTransport: parseCurrency(aliTransport), aleynaTransport: parseCurrency(aleynaTransport),
             });
-            setCanSalary(''); setAleynaSalary(''); setCanFood(''); setAleynaFood(''); setCanTransport(''); setAleynaTransport('');
+            setAliSalary(''); setAleynaSalary(''); setAliFood(''); setAleynaFood(''); setAliTransport(''); setAleynaTransport('');
             showToast(isAleyna ? "Maaşlarımız bereketli olsun canım! 💰" : "Yeni maaş dönemi başarıyla başlatıldı.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
       };
@@ -603,7 +604,7 @@
               const { db, doc, setDoc } = window.firebaseApp; const id = 'debt_' + Date.now();
               await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
                   id, type: 'debt', debtType: dbtType, name: dbtName, totalAmount: parseCurrency(dbtTotal), monthlyPayment: parseCurrency(dbtMonthly),
-                  totCannstallments: Number(dbtInstallments) || 0, paidInstallments: 0, interestRate: Number(dbtInterest) || 0, date: new Date().toISOString()
+                  totalInstallments: Number(dbtInstallments) || 0, paidInstallments: 0, interestRate: Number(dbtInterest) || 0, date: new Date().toISOString()
               });
               setDbtName(''); setDbtTotal(''); setDbtMonthly(''); setDbtInstallments(''); setDbtInterest('');
               showToast(isAleyna ? "Borcumuz sisteme işlendi canım 💸" : "Borç başarıyla eklendi.");
@@ -690,7 +691,7 @@
                 <i className="fa-solid fa-gem text-4xl text-white -rotate-12"></i>
               </div>
               <h1 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">Life<span className="text-indigo-600">ERP</span></h1>
-              <p className="text-slate-500 font-medium mb-10">Can & Aleyna - Kişisel Yaşam & Finans Sistemi</p>
+              <p className="text-slate-500 font-medium mb-10">Ali & Aleyna - Kişisel Yaşam & Finans Sistemi</p>
               <button onClick={handleLogin} className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 font-bold py-4 px-6 rounded-2xl hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all shadow-sm active:scale-95">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6" />
                 Sisteme Güvenli Giriş Yap
@@ -713,7 +714,7 @@
       const targetProgress = targetAmount > 0 && stats ? Math.min((stats.totalCurrent / targetAmount) * 100, 100) : 0;
       const totalGoldEquivalent = stats && marketData.gold ? (stats.totalCurrent / marketData.gold).toFixed(2) : 0;
 
-      const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totCannstallments || 0));
+      const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totalInstallments || 0));
       const activeCards = debts.filter(d => d.debtType === 'card' && d.totalAmount > 0);
       const totalActiveDebt = [...activeLoans, ...activeCards].reduce((sum, d) => sum + d.totalAmount, 0);
       const savingRatio = budgetStats?.investedPercent > 0 ? Math.min(budgetStats.investedPercent, 100) : 0;
@@ -734,7 +735,7 @@
             {isAleyna && <span className="absolute top-10 right-10 text-3xl opacity-20 cute-float">🐱</span>}
             
             <div className="relative z-10 text-center mb-6 px-4">
-                <p className="text-xs md:text-sm font-medium text-white/80 itCanc drop-shadow-md">"{quote}"</p>
+                <p className="text-xs md:text-sm font-medium text-white/80 italic drop-shadow-md">"{quote}"</p>
             </div>
 
             <div className="relative z-10 flex justify-between items-center mb-6">
@@ -984,7 +985,7 @@
                       <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
                         <div>
                           <p className="text-white/60 text-xs font-bold uppercase mb-1">Toplam Yatırılan</p>
-                          <p className="text-xl font-bold">{formatCurrency(stats.totCannvested)}</p>
+                          <p className="text-xl font-bold">{formatCurrency(stats.totalInvested)}</p>
                         </div>
                         <div>
                           <p className="text-white/60 text-xs font-bold uppercase mb-1">Net Kâr / Zarar</p>
@@ -1132,8 +1133,8 @@
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                               <h3 className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b border-slate-200 pb-2">Ana Maaşlar (Çekirdek Bütçe)</h3>
                               <div className="space-y-2">
-                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Can Maaş</label>
-                                  <CurrencyInput value={CanSalary} onChange={setCanSalary} placeholder="Can Maaş (TL)" isAleyna={isAleyna} />
+                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Ali Maaş</label>
+                                  <CurrencyInput value={aliSalary} onChange={setAliSalary} placeholder="Ali Maaş (TL)" isAleyna={isAleyna} />
                               </div>
                               <div className="space-y-2">
                                   <label className={`text-xs font-bold ${isAleyna ? 'text-pink-400' : 'text-slate-400'} uppercase ml-2`}>Aleyna Maaş {isAleyna && '💖'}</label>
@@ -1144,10 +1145,10 @@
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                               <h3 className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b border-slate-200 pb-2">Yan Haklar (Bütçe Harici)</h3>
                               <div className="space-y-2">
-                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Can Yemek & Yol</label>
+                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Ali Yemek & Yol</label>
                                   <div className="flex gap-2">
-                                      <CurrencyInput value={CanFood} onChange={setCanFood} placeholder="Yemek" icon="🍔" isAleyna={isAleyna} />
-                                      <CurrencyInput value={CanTransport} onChange={setCanTransport} placeholder="Yol" icon="🚌" isAleyna={isAleyna} />
+                                      <CurrencyInput value={aliFood} onChange={setAliFood} placeholder="Yemek" icon="🍔" isAleyna={isAleyna} />
+                                      <CurrencyInput value={aliTransport} onChange={setAliTransport} placeholder="Yol" icon="🚌" isAleyna={isAleyna} />
                                   </div>
                               </div>
                               <div className="space-y-2">
@@ -1162,7 +1163,7 @@
                           <div className={`mt-4 p-4 rounded-xl flex justify-between items-center bg-emerald-50 border border-emerald-100`}>
                               <span className="font-bold text-emerald-800 uppercase text-sm">Aylık Çekirdek Kasa:</span>
                               <span className={`text-2xl font-black text-emerald-600`}>
-                                  {formatCurrency(parseCurrency(CanSalary) + parseCurrency(aleynaSalary))}
+                                  {formatCurrency(parseCurrency(aliSalary) + parseCurrency(aleynaSalary))}
                               </span>
                           </div>
 
@@ -1195,7 +1196,7 @@
                               <div className="flex gap-2">
                                   <select value={expenseOwner} onChange={(e) => setExpenseOwner(e.target.value)} className={`w-1/3 px-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-xs transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-rose-500/10 focus:border-rose-500'}`}>
                                       <option value="Ortak">Ortak</option>
-                                      <option value="Can">Can</option>
+                                      <option value="Ali">Ali</option>
                                       <option value="Aleyna">Aleyna</option>
                                   </select>
                                   <CurrencyInput value={expenseAmount} onChange={setExpenseAmount} placeholder="Tutar" isAleyna={isAleyna} className={isAleyna ? 'focus:border-pink-500' : 'focus:border-rose-500'} />
@@ -1219,7 +1220,7 @@
                                       </div>
                                   </div>
                               ))}
-                              {(!budgetStats || budgetStats.currentExpenses.length === 0) && <p className="text-center text-sm font-medium text-slate-400 itCanc py-4">Bu dönem kayıt yok.</p>}
+                              {(!budgetStats || budgetStats.currentExpenses.length === 0) && <p className="text-center text-sm font-medium text-slate-400 italic py-4">Bu dönem kayıt yok.</p>}
                           </div>
                       </div>
 
@@ -1254,7 +1255,7 @@
                                       </div>
                                   </div>
                               ))}
-                              {subscriptions.length === 0 && <p className="text-center text-sm font-medium text-slate-400 itCanc py-4">Abonelik bulunmuyor.</p>}
+                              {subscriptions.length === 0 && <p className="text-center text-sm font-medium text-slate-400 italic py-4">Abonelik bulunmuyor.</p>}
                           </div>
                       </div>
                   </div>
@@ -1279,7 +1280,7 @@
                                     <select value={wPriority} onChange={(e) => setWPriority(e.target.value)} className={`flex-1 px-2 py-3 outline-none font-bold text-slate-700 text-sm transition`}>
                                         <option value="3">🔥 Çok Acil / Çok İstiyoruz</option>
                                         <option value="2">⭐ Normal / Alınabilir</option>
-                                        <option value="1">💭 Gelecek HayCan / Acelesi Yok</option>
+                                        <option value="1">💭 Gelecek Hayali / Acelesi Yok</option>
                                     </select>
                                 </div>
                             </div>
@@ -1294,7 +1295,7 @@
                                 {wishlist.filter(w => w.status === 'bekliyor').map(w => (
                                     <div key={w.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
                                         <div className="absolute top-4 right-4 flex gap-2">
-                                            <button onClick={() => handleUpdateDocField(w.id, 'status', 'Canndi', 'Dilek gerçekleşti! Tebrikler! 🎉')} className={`w-8 h-8 rounded-lg bg-${themeColor}-50 text-${themeColor}-600 hover:bg-${themeColor}-100 transition flex items-center justify-center`}>
+                                            <button onClick={() => handleUpdateDocField(w.id, 'status', 'alindi', 'Dilek gerçekleşti! Tebrikler! 🎉')} className={`w-8 h-8 rounded-lg bg-${themeColor}-50 text-${themeColor}-600 hover:bg-${themeColor}-100 transition flex items-center justify-center`}>
                                                 <i className="fa-solid fa-check"></i>
                                             </button>
                                             <button onClick={() => handleDeleteDocument(w.id, 'Dilek silindi.')} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-rose-500 transition flex items-center justify-center">
@@ -1319,12 +1320,12 @@
                                         </div>
                                     </div>
                                 ))}
-                                {wishlist.filter(w => w.status === 'bekliyor').length === 0 && <p className="col-span-full text-sm text-slate-400 itCanc">Dilek listeniz şu an boş.</p>}
+                                {wishlist.filter(w => w.status === 'bekliyor').length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Dilek listeniz şu an boş.</p>}
                             </div>
 
                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Gerçekleşenler ✅</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {wishlist.filter(w => w.status === 'Canndi').map(w => (
+                                {wishlist.filter(w => w.status === 'alindi').map(w => (
                                     <div key={w.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 opacity-70 flex justify-between items-center">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i className="fa-solid fa-check"></i></div>
@@ -1397,7 +1398,7 @@
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Aktif Krediler</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {activeLoans.map(d => {
-                                const progress = Math.min((d.paidInstallments / d.totCannstallments) * 100, 100);
+                                const progress = Math.min((d.paidInstallments / d.totalInstallments) * 100, 100);
                                 return (
                                 <div key={d.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
                                     <button onClick={() => handleDeleteDocument(d.id, 'Kredi silindi.')} className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition">
@@ -1411,7 +1412,7 @@
                                             <div className={`bg-${themeColor}-500 h-2.5 rounded-full transition-all`} style={{ width: `${progress}%` }}></div>
                                         </div>
                                         <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-4">
-                                            <span>{d.paidInstallments} / {d.totCannstallments} Ay Ödendi</span>
+                                            <span>{d.paidInstallments} / {d.totalInstallments} Ay Ödendi</span>
                                             <span>Kalan: {formatCurrency(d.totalAmount)}</span>
                                         </div>
                                     </div>
@@ -1420,7 +1421,7 @@
                                     </button>
                                 </div>
                             )})}
-                            {activeLoans.length === 0 && <p className="col-span-full text-sm text-slate-400 itCanc">Aktif kredi bulunmuyor.</p>}
+                            {activeLoans.length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Aktif kredi bulunmuyor.</p>}
                         </div>
 
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Kredi Kartı & Diğer Borçlar</h4>
@@ -1440,7 +1441,7 @@
                                     </button>
                                 </div>
                             ))}
-                            {activeCards.length === 0 && <p className="col-span-full text-sm text-slate-400 itCanc">Kredi kartı borcu bulunmuyor.</p>}
+                            {activeCards.length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Kredi kartı borcu bulunmuyor.</p>}
                         </div>
 
                     </div>
@@ -1495,7 +1496,7 @@
                                     </div>
                                 </div>
                             ))}
-                            {houses.length === 0 && <p className="col-span-full text-center text-sm text-slate-400 itCanc py-6">Henüz kaydedilmiş bir ev adayı yok.</p>}
+                            {houses.length === 0 && <p className="col-span-full text-center text-sm text-slate-400 italic py-6">Henüz kaydedilmiş bir ev adayı yok.</p>}
                         </div>
                     </div>
                 </div>
@@ -1526,8 +1527,8 @@
                                 <CurrencyInput value={dPrice} onChange={setDPrice} placeholder="Fiyat" isAleyna={isAleyna} />
                             </div>
                             <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
-                                <option value="Cannacak">Alınacak</option>
-                                <option value="Canndi">Alındı ✅</option>
+                                <option value="alinacak">Alınacak</option>
+                                <option value="alindi">Alındı ✅</option>
                             </select>
                             <button type="submit" className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 bg-${themeColor}-600 hover:bg-${themeColor}-700`}>
                                 Ekle
@@ -1538,10 +1539,10 @@
                             <div>
                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Alınacaklar Listesi</h4>
                                 <div className="space-y-2">
-                                    {dowryItems.filter(d => d.status === 'Cannacak').map(item => (
+                                    {dowryItems.filter(d => d.status === 'alinacak').map(item => (
                                         <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl hover:border-slate-300 transition">
                                             <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'Canndi', 'Ürün alındı olarak işaretlendi! 🎉')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center"></button>
+                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alindi', 'Ürün alındı olarak işaretlendi! 🎉')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center"></button>
                                                 <span className="font-bold text-slate-700">{item.name}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
@@ -1550,17 +1551,17 @@
                                             </div>
                                         </div>
                                     ))}
-                                    {dowryItems.filter(d => d.status === 'Cannacak').length === 0 && <p className="text-xs text-slate-400 itCanc">Alınacak ürün bulunmuyor.</p>}
+                                    {dowryItems.filter(d => d.status === 'alinacak').length === 0 && <p className="text-xs text-slate-400 italic">Alınacak ürün bulunmuyor.</p>}
                                 </div>
                             </div>
 
                             <div>
                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Alınanlar ✅</h4>
                                 <div className="space-y-2">
-                                    {dowryItems.filter(d => d.status === 'Canndi').map(item => (
+                                    {dowryItems.filter(d => d.status === 'alindi').map(item => (
                                         <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-xl opacity-70 hover:opacity-100 transition">
                                             <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'Cannacak', 'Ürün geri alındı.')} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center"><i className="fa-solid fa-check text-xs"></i></button>
+                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alinacak', 'Ürün geri alındı.')} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center"><i className="fa-solid fa-check text-xs"></i></button>
                                                 <span className="font-bold text-slate-500 line-through-anim">{item.name}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
@@ -1611,7 +1612,7 @@
                                             <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
                                         </div>
                                     ))}
-                                    {mediaItems.filter(m => m.status === 'bekliyor').length === 0 && <p className="text-xs text-slate-400 itCanc">Bekleyen kayıt yok.</p>}
+                                    {mediaItems.filter(m => m.status === 'bekliyor').length === 0 && <p className="text-xs text-slate-400 italic">Bekleyen kayıt yok.</p>}
                                 </div>
                             </div>
                             
@@ -1664,7 +1665,7 @@
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-piggy-bank text-emerald-500"></i> Para Piyasası / Mevduat</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <CurrencyInput value={mmfInvested} onChange={setMmfInvested} placeholder="Yatırılan MCanyet" isAleyna={isAleyna} />
+                            <CurrencyInput value={mmfInvested} onChange={setMmfInvested} placeholder="Yatırılan Maliyet" isAleyna={isAleyna} />
                             <CurrencyInput value={mmfCurrent} onChange={setMmfCurrent} placeholder="Güncel Değer" isAleyna={isAleyna} />
                         </div>
                       </div>
@@ -1672,7 +1673,7 @@
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-coins text-amber-400"></i> Altın Fonları / Fiziksel</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <CurrencyInput value={goldInvested} onChange={setGoldInvested} placeholder="Yatırılan MCanyet" isAleyna={isAleyna} />
+                            <CurrencyInput value={goldInvested} onChange={setGoldInvested} placeholder="Yatırılan Maliyet" isAleyna={isAleyna} />
                             <CurrencyInput value={goldCurrent} onChange={setGoldCurrent} placeholder="Güncel Değer" isAleyna={isAleyna} />
                         </div>
                       </div>
@@ -1693,7 +1694,7 @@
                           <button type="button" onClick={handleAddStock} className="cute-bounce text-xs bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold transition"><i className="fa-solid fa-plus"></i> Yeni Ekle</button>
                         </div>
                         
-                        {stocks.length === 0 && <p className="text-xs font-medium text-slate-400 itCanc">Şu an takip edilen hisse senedi yok.</p>}
+                        {stocks.length === 0 && <p className="text-xs font-medium text-slate-400 italic">Şu an takip edilen hisse senedi yok.</p>}
 
                         <div className="space-y-3">
                           {stocks.map((stock) => (
@@ -1739,9 +1740,9 @@
 
                 <div className="space-y-4 relative z-10">
                   {sortedEntries.map((entry) => {
-                    const totCan = (entry.mmfInvested||0) + (entry.goldInvested||0) + (entry.fxInvested||0) + (entry.stocks||[]).reduce((s, x) => s + (x.invested||0), 0) + (entry.emergencyFund||0);
+                    const totalI = (entry.mmfInvested||0) + (entry.goldInvested||0) + (entry.fxInvested||0) + (entry.stocks||[]).reduce((s, x) => s + (x.invested||0), 0) + (entry.emergencyFund||0);
                     const totalC = (entry.mmfCurrent||0) + (entry.goldCurrent||0) + (entry.fxCurrent||0) + (entry.stocks||[]).reduce((s, x) => s + (x.current||0), 0) + (entry.emergencyFund||0);
-                    const profit = totalC - totCan;
+                    const profit = totalC - totalI;
                     
                     return (
                       <div key={entry.id} className={`bg-slate-50 border border-slate-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 transition hover:border-${isAleyna ? 'pink-300' : 'indigo-300'}`}>

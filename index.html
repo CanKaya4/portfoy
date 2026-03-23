@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ali & Aleyna Portföy</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome İkonları -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- React ve ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      background-color: #f8fafc;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Romantik Karşılama Animasyonları */
+    @keyframes floatUp {
+      0% { transform: translateY(110vh) rotate(0deg) scale(0.8); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-20vh) rotate(360deg) scale(1.2); opacity: 0; }
+    }
+    .flower-anim {
+      position: fixed;
+      bottom: -100px;
+      animation: floatUp ease-in forwards;
+      z-index: 101;
+    }
+    @keyframes heartPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .heart-pulse {
+      animation: heartPulse 2.5s infinite ease-in-out;
+    }
+    @keyframes fadeOutScreen {
+      0% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
+    }
+    .romantic-screen {
+      animation: fadeOutScreen 4.5s forwards;
+    }
+
+    /* Toast Animasyonu */
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast-animate {
+      animation: slideUp 0.3s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="text-slate-800 font-sans pb-24 md:pb-12">
+  
+  <div id="root"></div>
+
+  <!-- FIREBASE BAĞLANTISI -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    // Google Auth eklendi
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCXXP89y1yy9zBzvd7zeh7cWxCIrtegTpg",
+      authDomain: "alialeynaportfoy.firebaseapp.com",
+      projectId: "alialeynaportfoy",
+      storageBucket: "alialeynaportfoy.firebasestorage.app",
+      messagingSenderId: "173177562821",
+      appId: "1:173177562821:web:54c7e1a705438b030732ac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // Firebase araçlarını React'e aktar
+    window.firebaseApp = { 
+        auth, db, signInWithPopup, provider, onAuthStateChanged, signOut, 
+        collection, doc, setDoc, deleteDoc, onSnapshot 
+    };
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
+
+  <!-- REACT UYGULAMASI -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- BİLDİRİM (TOAST) BİLEŞENİ ---
+    const Toast = ({ message, type, onClose }) => {
+      useEffect(() => {
+        const timer = setTimeout(() => onClose(), 3000);
+        return () => clearTimeout(timer);
+      }, [onClose]);
+
+      const colors = type === 'error' ? 'bg-rose-600' : 'bg-emerald-600';
+      const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+
+      return (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-sm toast-animate">
+          <div className={`${colors} text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3`}>
+            <i className={`fa-solid ${icon} text-xl`}></i>
+            <p className="font-semibold text-sm flex-1">{message}</p>
+            <button onClick={onClose} className="text-white/70 hover:text-white"><i className="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      );
+    };
+
+    // --- MODAL BİLEŞENİ ---
+    const ReportModal = ({ isOpen, onClose, title, icon, content }) => {
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                  <i className={`fa-solid ${icon}`}></i>
+                </div>
+                {title}
+              </h3>
+              <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 flex items-center justify-center transition">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div className="p-6 text-slate-700 text-sm md:text-base leading-relaxed whitespace-pre-line max-h-[60vh] overflow-y-auto">
+              {content}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- ROMANTİK KARŞILAMA BİLEŞENİ (ALEYNA'YA ÖZEL) ---
+    const RomanticGreeting = ({ isOpen }) => {
+      if (!isOpen) return null;
+
+      const phrases = [
+        "Hoş geldin Gülüm... 🌹",
+        "Günün güzel geçsin Güzelim 🌸",
+        "Hoş geldin Biriciğim 🌷",
+        "Seni çok seviyorum Canım... 🌺",
+        "Hoş geldin Hayatım 🌼",
+        "Benim Tatlı Nişanlım 💖"
+      ];
+      const randomPhrase = useMemo(() => phrases[Math.floor(Math.random() * phrases.length)], []);
+
+      const flowers = useMemo(() => {
+        const icons = ['🌸', '🌺', '🌷', '🌼', '✨', '💖', '🦋', '💐', '🩷'];
+        return Array.from({ length: 30 }).map((_, i) => ({
+          id: i,
+          icon: icons[Math.floor(Math.random() * icons.length)],
+          left: `${Math.random() * 100}%`,
+          animationDuration: `${3 + Math.random() * 2}s`,
+          animationDelay: `${Math.random() * 1.5}s`,
+          fontSize: `${1.5 + Math.random() * 2.5}rem`
+        }));
+      }, []);
+
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-50 to-fuchsia-100 romantic-screen overflow-hidden">
+          {flowers.map(f => (
+            <div key={f.id} className="flower-anim" style={{ left: f.left, animationDuration: f.animationDuration, animationDelay: f.animationDelay, fontSize: f.fontSize }}>
+              {f.icon}
+            </div>
+          ))}
+          <div className="relative z-[102] bg-white/60 backdrop-blur-xl p-10 md:p-14 rounded-[3rem] shadow-2xl border border-white/80 text-center transform heart-pulse max-w-[90%]">
+            <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-pink-500 to-purple-500 rounded-[2rem] flex items-center justify-center shadow-lg shadow-pink-500/30 mb-6 transform rotate-12">
+               <i className="fa-solid fa-heart text-5xl text-white -rotate-12"></i>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 mb-4 drop-shadow-sm leading-tight">
+              {randomPhrase}
+            </h1>
+            <p className="text-purple-800 font-bold text-lg opacity-80">Portföyüne hoş geldin...</p>
+          </div>
+        </div>
+      );
+    };
+
+    const App = () => {
+      const [isFirebaseReady, setIsFirebaseReady] = useState(!!window.firebaseApp);
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [entries, setEntries] = useState([]);
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [toast, setToast] = useState(null);
+      const [selectedReport, setSelectedReport] = useState(null);
+
+      // Romantik Karşılama State'i
+      const [showRomanticGreeting, setShowRomanticGreeting] = useState(false);
+      const [hasGreeted, setHasGreeted] = useState(false);
+
+      // Canlı Piyasa Verileri
+      const [marketData, setMarketData] = useState({ usd: null, eur: null, gold: null, interest: 50.0 });
+
+      // Form State (Boşlukları destekler)
+      const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+      
+      const [mmfInvested, setMmfInvested] = useState('');
+      const [mmfCurrent, setMmfCurrent] = useState('');
+      const [goldInvested, setGoldInvested] = useState('');
+      const [goldCurrent, setGoldCurrent] = useState('');
+      const [fxInvested, setFxInvested] = useState('');
+      const [fxCurrent, setFxCurrent] = useState('');
+      const [stocks, setStocks] = useState([]);
+
+      const showToast = (message, type = 'success') => setToast({ message, type });
+
+      // 1. Firebase Başlatma
+      useEffect(() => {
+        const handleReady = () => setIsFirebaseReady(true);
+        window.addEventListener('firebase-ready', handleReady);
+        return () => window.removeEventListener('firebase-ready', handleReady);
+      }, []);
+
+      // 2. Canlı Piyasa Verilerini Çekme (Türkiye Piyasası)
+      useEffect(() => {
+        const fetchRates = async () => {
+          try {
+            // Frankfurt API üzerinden döviz kurlarını güvenli bir şekilde alıyoruz (CORS sorunu yaşatmaz)
+            const resUsd = await fetch('https://api.frankfurter.app/latest?from=USD&to=TRY');
+            const dataUsd = await resUsd.json();
+            
+            const resEur = await fetch('https://api.frankfurter.app/latest?from=EUR&to=TRY');
+            const dataEur = await resEur.json();
+
+            let goldPrice = null;
+            
+            // Altın verisi için alternatif proxy denemesi (Eğer adblocker vs engellerse sessizce atlanır)
+            try {
+              const goldRes = await fetch('https://api.codetabs.com/v1/proxy?quest=https://api.genelpara.com/embed/altin.json');
+              if (goldRes.ok) {
+                const goldData = await goldRes.json();
+                goldPrice = parseFloat(String(goldData.GA.satis).replace(',', '.'));
+              }
+            } catch (goldError) {
+               // Altın çekilemezse konsolu kirletmeden devam et
+            }
+
+            setMarketData({ 
+              usd: dataUsd.rates.TRY, 
+              eur: dataEur.rates.TRY, 
+              gold: goldPrice, 
+              interest: 50.0 
+            });
+          } catch (error) {
+            // Tüm istekler başarısız olursa sessizce yut
+          }
+        };
+        fetchRates();
+      }, []);
+
+      // 3. Oturum Kontrolü
+      useEffect(() => {
+        if (!isFirebaseReady) return;
+        const { auth, onAuthStateChanged } = window.firebaseApp;
+        
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          setUser(currentUser);
+          
+          // Eşin (Aleyna) için özel romantik kontrol
+          if (currentUser && currentUser.email === 'aleynaerdn2294@gmail.com' && !hasGreeted) {
+            setShowRomanticGreeting(true);
+            setHasGreeted(true);
+            setTimeout(() => {
+              setShowRomanticGreeting(false);
+            }, 4500); // 4.5 saniye sonra animasyon kaybolur
+          }
+
+          if(!currentUser) setLoading(false);
+        });
+        return () => unsubscribe();
+      }, [isFirebaseReady, hasGreeted]);
+
+      // 4. Verileri Dinleme (Global, Hesap fark etmeksizin aynı veri okunur)
+      useEffect(() => {
+        if (!isFirebaseReady || !user) return;
+        const { db, collection, onSnapshot } = window.firebaseApp;
+        
+        // Ali ve Aleyna için ortak koleksiyon (User ID'ye bağlı DEĞİLDİR)
+        const colRef = collection(db, 'portfoy_kayitlari_v2');
+        
+        const unsubscribe = onSnapshot(colRef, (snapshot) => {
+          const data = snapshot.docs.map(doc => doc.data());
+          setEntries(data.filter(d => d.type === 'entry'));
+          setLoading(false);
+        }, (error) => {
+          showToast("Veritabanına ulaşılamıyor. Lütfen bağlantınızı kontrol edin.", "error");
+          setLoading(false);
+        });
+
+        return () => unsubscribe();
+      }, [isFirebaseReady, user]);
+
+      // --- GİRİŞ & ÇIKIŞ İŞLEMLERİ ---
+      const handleLogin = async () => {
+        try {
+          const { auth, provider, signInWithPopup } = window.firebaseApp;
+          await signInWithPopup(auth, provider);
+          showToast("Başarıyla giriş yapıldı!");
+        } catch (error) {
+          console.error("Giriş hatası detayları:", error);
+          if (error.code === 'auth/popup-closed-by-user') {
+            showToast("Giriş penceresi kapatıldı.", "error");
+          } else if (error.code === 'auth/operation-not-allowed') {
+            showToast("Hata: Firebase konsolundan 'Google' giriş yöntemini aktifleştirmediniz.", "error");
+          } else if (error.code === 'auth/unauthorized-domain') {
+            showToast("Hata: Bu alan adı Firebase'de yetkilendirilmemiş (Authorized domains kısmına ekleyin).", "error");
+          } else {
+            showToast(`Giriş hatası: ${error.message}`, "error");
+          }
+        }
+      };
+
+      const handleLogout = async () => {
+        try {
+          const { auth, signOut } = window.firebaseApp;
+          await signOut(auth);
+          setEntries([]);
+          setActiveTab('dashboard');
+        } catch (error) {
+          showToast("Çıkış yapılamadı.", "error");
+        }
+      };
+
+      // --- HESAPLAMALAR ---
+      const sortedEntries = useMemo(() => {
+        return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+      }, [entries]);
+
+      const latestEntry = sortedEntries[0];
+      const previousEntry = sortedEntries[1];
+
+      const getStats = () => {
+        if (!latestEntry) return null;
+
+        const totalInvested = 
+            (latestEntry.mmfInvested || 0) + 
+            (latestEntry.goldInvested || 0) + 
+            (latestEntry.fxInvested || 0) + 
+            (latestEntry.stocks || []).reduce((sum, s) => sum + (s.invested || 0), 0);
+
+        const totalCurrent = 
+            (latestEntry.mmfCurrent || 0) + 
+            (latestEntry.goldCurrent || 0) + 
+            (latestEntry.fxCurrent || 0) + 
+            (latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0);
+
+        const totalProfit = totalCurrent - totalInvested;
+        const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
+        let weeklyChangeTry = 0;
+        if (previousEntry) {
+          const prevCurrent = (previousEntry.mmfCurrent || 0) + (previousEntry.goldCurrent || 0) + (previousEntry.fxCurrent || 0) + (previousEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0);
+          weeklyChangeTry = totalCurrent - prevCurrent;
+        }
+
+        // Varlık Dağılımı Hesaplama
+        const mmfRatio = totalCurrent > 0 ? ((latestEntry.mmfCurrent || 0) / totalCurrent) * 100 : 0;
+        const goldRatio = totalCurrent > 0 ? ((latestEntry.goldCurrent || 0) / totalCurrent) * 100 : 0;
+        const fxRatio = totalCurrent > 0 ? ((latestEntry.fxCurrent || 0) / totalCurrent) * 100 : 0;
+        const stockRatio = totalCurrent > 0 ? (((latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0)) / totalCurrent) * 100 : 0;
+
+        return { 
+            totalInvested, totalCurrent, totalProfit, totalProfitPercent, weeklyChangeTry,
+            mmfRatio, goldRatio, fxRatio, stockRatio
+        };
+      };
+
+      const stats = getStats();
+
+      // Para Formatı
+      const formatCurrency = (value, currency = 'TRY', decimals = 0) => {
+        if(currency === 'USD') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: decimals }).format(value || 0);
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: decimals }).format(value || 0);
+      };
+
+      // --- FORM İŞLEMLERİ ---
+      const handleAddStock = () => setStocks([...stocks, { id: Date.now(), name: '', invested: '', current: '' }]);
+      const handleRemoveStock = (id) => setStocks(stocks.filter(s => s.id !== id));
+      const handleStockChange = (id, field, value) => setStocks(stocks.map(s => s.id === id ? { ...s, [field]: value } : s));
+
+      const handleSaveEntry = async (e) => {
+        e.preventDefault();
+        if (!user) {
+          showToast("Oturum süresi dolmuş. Lütfen tekrar giriş yapın.", "error");
+          return;
+        }
+        
+        const { db, doc, setDoc } = window.firebaseApp;
+        const entryId = Date.now().toString();
+        const existingEntry = entries.find(ev => ev.date === date);
+        const docIdToSave = existingEntry ? existingEntry.id : entryId;
+
+        // Boş bırakılan alanları Number() ile dönüştürürken 0'a sabitliyoruz
+        const newEntry = {
+          id: docIdToSave, type: 'entry', date,
+          mmfInvested: Number(mmfInvested) || 0, 
+          mmfCurrent: Number(mmfCurrent) || 0,
+          goldInvested: Number(goldInvested) || 0, 
+          goldCurrent: Number(goldCurrent) || 0,
+          fxInvested: Number(fxInvested) || 0, 
+          fxCurrent: Number(fxCurrent) || 0,
+          stocks: stocks.map(s => ({ 
+              ...s, 
+              name: s.name || 'İsimsiz Hisse',
+              invested: Number(s.invested) || 0, 
+              current: Number(s.current) || 0 
+          }))
+        };
+
+        try {
+          await setDoc(doc(db, 'portfoy_kayitlari_v2', docIdToSave), newEntry);
+          setActiveTab('dashboard');
+          showToast("Haftalık değerlendirme başarıyla kaydedildi! 🚀");
+          
+          // Formu Temizle
+          setMmfInvested(''); setMmfCurrent('');
+          setGoldInvested(''); setGoldCurrent('');
+          setFxInvested(''); setFxCurrent('');
+          setStocks([]);
+        } catch (error) {
+          showToast('Kayıt başarısız: ' + error.message, "error");
+        }
+      };
+
+      const handleDeleteEntry = async (id) => {
+        if (!user) return;
+        if(window.confirm('Bu haftaki kaydı kalıcı olarak silmek istediğinize emin misiniz?')) {
+          const { db, doc, deleteDoc } = window.firebaseApp;
+          try { 
+              await deleteDoc(doc(db, 'portfoy_kayitlari_v2', id)); 
+              showToast("Kayıt başarıyla silindi.");
+          } catch (error) {
+              showToast("Silme işlemi başarısız.", "error");
+          }
+        }
+      };
+
+      // --- RAPOR İÇERİKLERİ ---
+      const showReport = (type) => {
+        if (!stats || sortedEntries.length < 2) {
+            showToast("Detaylı analiz için en az 2 haftalık veri girmelisiniz.", "error");
+            return;
+        }
+
+        let content = "";
+        let title = "";
+        let icon = "";
+
+        const oldestEntry = sortedEntries[sortedEntries.length - 1];
+        const monthsPassed = Math.max(1, (new Date(latestEntry.date) - new Date(oldestEntry.date)) / (1000 * 60 * 60 * 24 * 30));
+
+        switch(type) {
+            case 'growth':
+                title = "Uzun Vadeli Büyüme Raporu";
+                icon = "fa-seedling";
+                const totalGrowth = stats.totalCurrent - (oldestEntry.mmfCurrent || 0); // Basitleştirilmiş
+                const avgMonthlyGrowth = stats.totalProfit / monthsPassed;
+                content = `🎯 Toplamda yatırdığınız ana para: ${formatCurrency(stats.totalInvested)}\n💰 Güncel Ulaşılan Büyüklük: ${formatCurrency(stats.totalCurrent)}\n\n`;
+                content += `📈 Sizin disiplinli tasarrufunuz ve yatırımlarınız sayesinde portföyünüz net olarak ${formatCurrency(stats.totalProfit)} (%${stats.totalProfitPercent.toFixed(1)}) reel kâr elde etti.\n\n`;
+                content += `⏱️ Aylık Ortalama Kâr Hızınız: ${formatCurrency(avgMonthlyGrowth)} / Ay.\nBu ivmeyle devam ederseniz bileşik getiri gücüyle portföyünüz kartopu etkisi yaratacaktır.`;
+                break;
+            case 'allocation':
+                title = "Stratejik Varlık Dağılımı";
+                icon = "fa-chart-pie";
+                content = `Portföyünüzün piyasa risklerine karşı duruşu:\n\n`;
+                content += `🛡️ Güvenli Liman (PPF & Mevduat): %${stats.mmfRatio.toFixed(1)}\n`;
+                content += `🌟 Değer Koruma (Altın): %${stats.goldRatio.toFixed(1)}\n`;
+                content += `💵 Kur Koruması (Döviz): %${stats.fxRatio.toFixed(1)}\n`;
+                content += `🚀 Büyüme Odaklı (Hisseler): %${stats.stockRatio.toFixed(1)}\n\n`;
+                if(stats.mmfRatio > 60) content += "Yorum: Oldukça defansif bir yapıdasınız. Faizlerin düşüş trendine girmesi durumunda diğer enstrümanlara geçiş fırsatlarını değerlendirebilirsiniz.";
+                else if(stats.stockRatio > 50) content += "Yorum: Agresif bir büyüme stratejisi izliyorsunuz. Borsadaki dalgalanmalar portföyünüzü derinden etkileyebilir, acil nakit ihtiyaçları için likit bir miktar ayırdığınızdan emin olun.";
+                else content += "Yorum: Tebrikler! Çeşitlendirilmiş ve oldukça dengeli bir portföy yönetiyorsunuz.";
+                break;
+            case 'inflation':
+                title = "Enflasyon ve Kur Analizi";
+                icon = "fa-shield-halved";
+                const currentUsdRate = marketData.usd || 34.0;
+                const portfolioInUsd = stats.totalCurrent / currentUsdRate;
+                const investedInUsd = stats.totalInvested / currentUsdRate; // Yaklaşık
+                const netUsdProfit = portfolioInUsd - investedInUsd;
+                content = `Mevcut Güncel Kur: ${currentUsdRate.toFixed(2)} ₺\n\n`;
+                content += `🌍 Global Satın Alma Gücünüz: ${formatCurrency(portfolioInUsd, 'USD')}\n\n`;
+                if(netUsdProfit > 0) {
+                    content += `🏆 Harika haber! TL bazındaki kârınız kur artışından daha yüksek. Portföyünüz Dolar bazında da ${formatCurrency(netUsdProfit, 'USD')} değer kazandı. Enflasyona karşı gerçek bir zafer.`;
+                } else {
+                    content += `⚠️ TL olarak kârda olsanız da, mevcut kur değişimleri sebebiyle portföyünüz Dolar karşısında ${formatCurrency(Math.abs(netUsdProfit), 'USD')} geride görünüyor. Getiri potansiyeli daha yüksek yatırım araçlarını inceleyebilirsiniz.`;
+                }
+                break;
+        }
+        setSelectedReport({ title, icon, content });
+      };
+
+      // --- LOGIN EKRANI ---
+      if (!loading && !user) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            
+            <div className="relative z-10 w-full max-w-md p-8 m-4 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl text-center border border-white/20">
+              <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-emerald-400 rounded-3xl mx-auto flex items-center justify-center shadow-lg mb-6 transform rotate-12">
+                <i className="fa-solid fa-chart-line text-4xl text-white -rotate-12"></i>
+              </div>
+              <h1 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">Portföy<span className="text-indigo-600">Pro</span></h1>
+              <p className="text-slate-500 font-medium mb-10">Ali & Aleyna - Finansal Özgürlük Paneli</p>
+              
+              <button 
+                onClick={handleLogin}
+                className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 text-slate-700 font-bold py-4 px-6 rounded-2xl hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all shadow-sm active:scale-95"
+              >
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6" />
+                Google ile Giriş Yap
+              </button>
+              
+              <p className="text-xs text-slate-400 mt-6 font-medium">Uçtan uca şifrelenmiş Firebase altyapısı ile güvendedir.</p>
+            </div>
+          </div>
+        );
+      }
+
+      // --- YÜKLEME EKRANI ---
+      if (loading) {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-600 font-bold tracking-wide animate-pulse">Sistem Hazırlanıyor...</p>
+          </div>
+        );
+      }
+
+      // --- ANA UYGULAMA ---
+      return (
+        <div className="max-w-md md:max-w-5xl mx-auto min-h-screen relative">
+          
+          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+          <ReportModal isOpen={selectedReport !== null} onClose={() => setSelectedReport(null)} {...selectedReport} />
+          
+          <RomanticGreeting isOpen={showRomanticGreeting} />
+
+          {/* APP HEADER */}
+          <header className="bg-gradient-to-b from-slate-900 to-slate-800 text-white pt-10 pb-6 px-6 md:rounded-b-3xl shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+            
+            <div className="relative z-10 flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                {user?.photoURL ? (
+                    <img src={user.photoURL} alt="Profil" className="w-12 h-12 rounded-full border-2 border-slate-700 shadow-md" />
+                ) : (
+                    <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-xl border-2 border-slate-700">
+                        {user?.displayName ? user.displayName.charAt(0) : 'A'}
+                    </div>
+                )}
+                <div>
+                  <p className="text-slate-400 text-xs font-bold tracking-wider uppercase">Hoş Geldin</p>
+                  <h1 className="text-xl font-extrabold">{user?.displayName?.split(' ')[0] || 'Yatırımcı'}</h1>
+                </div>
+              </div>
+              <button onClick={handleLogout} className="w-10 h-10 bg-slate-800/80 rounded-full flex items-center justify-center text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition border border-slate-700">
+                <i className="fa-solid fa-arrow-right-from-bracket"></i>
+              </button>
+            </div>
+
+            {/* LIVE MARKET TICKER */}
+            <div className="relative z-10 flex gap-3 overflow-x-auto hide-scrollbar pb-2 snap-x">
+                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-dollar-sign mr-1"></i> USD/TRY</p>
+                    <p className="text-white font-black mt-1">{marketData.usd ? marketData.usd.toFixed(2) : '...'}</p>
+                </div>
+                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-euro-sign mr-1"></i> EUR/TRY</p>
+                    <p className="text-white font-black mt-1">{marketData.eur ? marketData.eur.toFixed(2) : '...'}</p>
+                </div>
+                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-coins mr-1"></i> G. Altın</p>
+                    <p className="text-amber-400 font-black mt-1">{marketData.gold ? marketData.gold.toFixed(2) : '...'}</p>
+                </div>
+                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-building-columns mr-1"></i> TCMB Faiz</p>
+                    <p className="text-emerald-400 font-black mt-1">%{marketData.interest}</p>
+                </div>
+            </div>
+          </header>
+
+          {/* NAVIGATION */}
+          <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 z-40 md:sticky md:top-0 md:border-t-0 md:border-b md:bg-white/90 md:backdrop-blur-md pb-safe">
+            <div className="max-w-md md:max-w-5xl mx-auto flex justify-around md:justify-start px-2 py-3 md:py-4 gap-2">
+              <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'dashboard' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className="fa-solid fa-layer-group text-xl md:text-lg"></i>
+                <span className="text-[10px] md:text-sm font-bold">Özet</span>
+              </button>
+              <button onClick={() => setActiveTab('add')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'add' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className="fa-solid fa-circle-plus text-xl md:text-lg"></i>
+                <span className="text-[10px] md:text-sm font-bold">Kayıt Gir</span>
+              </button>
+              <button onClick={() => setActiveTab('history')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'history' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className="fa-solid fa-clock-rotate-left text-xl md:text-lg"></i>
+                <span className="text-[10px] md:text-sm font-bold">Geçmiş</span>
+              </button>
+            </div>
+          </nav>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="p-4 md:p-6 space-y-6">
+            
+            {/* --- DASHBOARD TAB --- */}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6 pb-6 animate-fade-in">
+                {!stats ? (
+                  <div className="bg-white p-10 text-center rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center">
+                    <div className="w-24 h-24 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner">
+                      <i className="fa-solid fa-vault"></i>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Portföyünüz Boş</h3>
+                    <p className="text-slate-500 mt-2 font-medium">Büyük yolculuklar tek bir adımla başlar. İlk aylık ve haftalık yatırımınızı girerek serüveni başlatın.</p>
+                    <button onClick={() => setActiveTab('add')} className="mt-8 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-xl shadow-indigo-600/30 active:scale-95">İlk Kaydı Oluştur</button>
+                  </div>
+                ) : (
+                  <>
+                    {/* TOTAL BALANCE CARD */}
+                    <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-900 rounded-[2rem] p-6 md:p-8 shadow-2xl shadow-indigo-900/20 text-white relative overflow-hidden">
+                      <i className="fa-solid fa-wallet absolute -right-6 -bottom-6 text-[150px] text-white/5 transform -rotate-12"></i>
+                      
+                      <div className="flex justify-between items-start relative z-10">
+                        <div>
+                          <p className="text-indigo-200 text-sm font-bold tracking-widest uppercase mb-1">Toplam Net Varlık</p>
+                          <h2 className="text-4xl md:text-5xl font-black tracking-tighter">{formatCurrency(stats.totalCurrent)}</h2>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 gap-4 relative z-10">
+                        <div>
+                          <p className="text-slate-400 text-xs font-bold uppercase mb-1">Toplam Yatırılan</p>
+                          <p className="text-xl font-bold">{formatCurrency(stats.totalInvested)}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-xs font-bold uppercase mb-1">Net Kâr / Zarar</p>
+                          <p className={`text-xl font-bold flex items-center gap-1 ${stats.totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <i className={`fa-solid ${stats.totalProfit >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'} text-sm`}></i>
+                            {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ASSET ALLOCATION WIDGET */}
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                        <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
+                            <i className="fa-solid fa-chart-pie text-indigo-500"></i> Varlık Dağılımı
+                        </h3>
+                        
+                        <div className="flex h-4 rounded-full overflow-hidden mb-5 bg-slate-100">
+                            {stats.mmfRatio > 0 && <div style={{width: `${stats.mmfRatio}%`}} className="bg-emerald-500 h-full"></div>}
+                            {stats.goldRatio > 0 && <div style={{width: `${stats.goldRatio}%`}} className="bg-amber-400 h-full"></div>}
+                            {stats.fxRatio > 0 && <div style={{width: `${stats.fxRatio}%`}} className="bg-blue-500 h-full"></div>}
+                            {stats.stockRatio > 0 && <div style={{width: `${stats.stockRatio}%`}} className="bg-rose-500 h-full"></div>}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Para Piyasası</p><p className="text-sm font-bold text-slate-800">%{stats.mmfRatio.toFixed(1)}</p></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Altın Fonu</p><p className="text-sm font-bold text-slate-800">%{stats.goldRatio.toFixed(1)}</p></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Döviz Fonu</p><p className="text-sm font-bold text-slate-800">%{stats.fxRatio.toFixed(1)}</p></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Hisse Senedi</p><p className="text-sm font-bold text-slate-800">%{stats.stockRatio.toFixed(1)}</p></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SMART REPORTS */}
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-800 mb-4 px-1 flex items-center gap-2">
+                        <i className="fa-solid fa-bolt text-amber-500"></i> Akıllı Raporlar
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        
+                        <button onClick={() => showReport('growth')} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group">
+                          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                            <i className="fa-solid fa-seedling"></i>
+                          </div>
+                          <div>
+                            <h4 className="font-extrabold text-slate-800 text-base">Uzun Vadeli Büyüme</h4>
+                            <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Aylık ortalama büyüme hızınız ve kar topu etkisi analizi.</p>
+                          </div>
+                        </button>
+
+                        <button onClick={() => showReport('allocation')} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group">
+                          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                            <i className="fa-solid fa-chart-pie"></i>
+                          </div>
+                          <div>
+                            <h4 className="font-extrabold text-slate-800 text-base">Varlık Dağılımı</h4>
+                            <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Risk profiliniz ve mevcut dağılımınızın güvenilirlik analizi.</p>
+                          </div>
+                        </button>
+
+                        <button onClick={() => showReport('inflation')} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group">
+                          <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                            <i className="fa-solid fa-shield-halved"></i>
+                          </div>
+                          <div>
+                            <h4 className="font-extrabold text-slate-800 text-base">Enflasyon & Kur Raporu</h4>
+                            <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Portföyünüzün Dolar karşısındaki gerçek reel satın alma gücü.</p>
+                          </div>
+                        </button>
+
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* --- ADD TAB --- */}
+            {activeTab === 'add' && (
+              <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 md:p-8 animate-fade-in">
+                <div className="mb-8">
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Kayıt Oluştur</h2>
+                    <p className="text-slate-500 text-sm mt-1 font-medium">Bu hafta yatırımlarınız nasıl şekillendi? (Sadece değişen veya yeni olanları doldurabilirsiniz)</p>
+                </div>
+
+                <form onSubmit={handleSaveEntry} className="space-y-8">
+                  
+                  {/* Tarih */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Değerlendirme Tarihi</label>
+                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition font-bold text-slate-700" />
+                  </div>
+
+                  {/* Varlık Kategorileri */}
+                  <div className="space-y-4">
+                      
+                      {/* PPF */}
+                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
+                        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-piggy-bank text-emerald-500"></i> Para Piyasası / Mevduat</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
+                                <input type="number" placeholder="Yatırılan Maliyet" value={mmfInvested} onChange={(e) => setMmfInvested(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-700 text-sm" />
+                            </div>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
+                                <input type="number" placeholder="Güncel Değer" value={mmfCurrent} onChange={(e) => setMmfCurrent(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-slate-700 text-sm" />
+                            </div>
+                        </div>
+                      </div>
+
+                      {/* Altın */}
+                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
+                        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-coins text-amber-400"></i> Altın Fonları / Fiziksel</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
+                                <input type="number" placeholder="Yatırılan Maliyet" value={goldInvested} onChange={(e) => setGoldInvested(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-amber-400 font-bold text-slate-700 text-sm" />
+                            </div>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
+                                <input type="number" placeholder="Güncel Değer" value={goldCurrent} onChange={(e) => setGoldCurrent(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-amber-400 font-bold text-slate-700 text-sm" />
+                            </div>
+                        </div>
+                      </div>
+
+                      {/* Döviz */}
+                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
+                        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-dollar-sign text-blue-500"></i> Döviz Fonları / Eurobond</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
+                                <input type="number" placeholder="Yatırılan (TL)" value={fxInvested} onChange={(e) => setFxInvested(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-700 text-sm" />
+                            </div>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₺</span>
+                                <input type="number" placeholder="Güncel (TL)" value={fxCurrent} onChange={(e) => setFxCurrent(e.target.value)} className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-700 text-sm" />
+                            </div>
+                        </div>
+                      </div>
+
+                      {/* Hisse Senetleri */}
+                      <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i className="fa-solid fa-arrow-trend-up text-rose-500"></i> Hisse Senetleri
+                          </h3>
+                          <button type="button" onClick={handleAddStock} className="text-xs bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold active:scale-95 transition"><i className="fa-solid fa-plus"></i> Yeni Ekle</button>
+                        </div>
+                        
+                        {stocks.length === 0 && <p className="text-xs font-medium text-slate-400 italic">Şu an takip edilen hisse senedi yok.</p>}
+
+                        <div className="space-y-3">
+                          {stocks.map((stock) => (
+                            <div key={stock.id} className="flex flex-col sm:flex-row gap-2 bg-white border border-slate-200 p-3 rounded-2xl relative">
+                              <button type="button" onClick={() => handleRemoveStock(stock.id)} className="absolute -top-2 -right-2 w-6 h-6 bg-slate-800 text-white rounded-full flex items-center justify-center shadow-md">
+                                <i className="fa-solid fa-xmark text-xs"></i>
+                              </button>
+                              <div className="flex-1">
+                                <input type="text" placeholder="Hisse Kodu" value={stock.name} onChange={(e) => handleStockChange(stock.id, 'name', e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-rose-400" />
+                              </div>
+                              <div className="flex-1 flex gap-2">
+                                  <input type="number" placeholder="Yatırılan" value={stock.invested} onChange={(e) => handleStockChange(stock.id, 'invested', e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-rose-400" />
+                                  <input type="number" placeholder="Güncel" value={stock.current} onChange={(e) => handleStockChange(stock.id, 'current', e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-rose-400" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                  </div>
+
+                  <button type="submit" className="w-full bg-slate-900 text-white font-bold py-5 rounded-2xl shadow-xl hover:bg-slate-800 transition active:scale-95 text-lg flex justify-center items-center gap-2">
+                    <i className="fa-solid fa-cloud-arrow-up"></i> Verileri Güvenli Şekilde Kaydet
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* --- HISTORY TAB --- */}
+            {activeTab === 'history' && (
+              <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-4 md:p-8 animate-fade-in">
+                <h2 className="text-2xl font-black text-slate-900 mb-6 px-1 flex items-center gap-2">
+                  <i className="fa-solid fa-clock-rotate-left text-indigo-500"></i> Geçmiş Dönemler
+                </h2>
+                <div className="space-y-4">
+                  {sortedEntries.map((entry) => {
+                    const totalI = (entry.mmfInvested||0) + (entry.goldInvested||0) + (entry.fxInvested||0) + (entry.stocks||[]).reduce((s, x) => s + (x.invested||0), 0);
+                    const totalC = (entry.mmfCurrent||0) + (entry.goldCurrent||0) + (entry.fxCurrent||0) + (entry.stocks||[]).reduce((s, x) => s + (x.current||0), 0);
+                    const profit = totalC - totalI;
+                    
+                    return (
+                      <div key={entry.id} className="bg-slate-50 border border-slate-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-indigo-300 transition">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm border border-slate-100 shrink-0">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{new Date(entry.date).toLocaleDateString('tr-TR', {month:'short'})}</span>
+                            <span className="text-xl font-black text-indigo-600 leading-none mt-0.5">{new Date(entry.date).getDate()}</span>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Toplam Portföy</p>
+                            <h4 className="font-black text-lg text-slate-800 leading-none">{formatCurrency(totalC)}</h4>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-200">
+                          <div className="text-right">
+                              <p className="text-[10px] font-bold uppercase text-slate-400 mb-0.5">Net Getiri</p>
+                              <p className={`text-sm font-black flex items-center justify-end gap-1 ${profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
+                              </p>
+                          </div>
+                          <button onClick={() => handleDeleteEntry(entry.id)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-rose-500 border border-slate-200 shadow-sm hover:bg-rose-50 active:scale-90 transition ml-2">
+                            <i className="fa-solid fa-trash-can"></i>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {sortedEntries.length === 0 && (
+                      <p className="text-center text-slate-400 font-medium py-10">Henüz kaydedilmiş bir geçmiş bulunmuyor.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

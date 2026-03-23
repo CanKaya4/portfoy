@@ -202,8 +202,16 @@
     const { useState, useEffect, useMemo } = React;
     const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, BarChart, Bar, Legend } = window.Recharts || {};
 
-    const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Diğer'];
-    const CHART_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b'];
+    const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Yol/Ulaşım', 'Diğer'];
+    const CHART_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b', '#84cc16'];
+
+    const MOTIVATIONAL_QUOTES = [
+      "Birlikte kurduğumuz her hayal, gerçeğe dönüşmeyi bekleyen bir tohumdur. 🌱",
+      "Küçük tasarruflar, büyük özgürlüklerin anahtarıdır. 🗝️",
+      "Gelecek, bugünden hazırlananlarınındır. Beraber başaracağız! 🚀",
+      "Hedeflerimize adım adım, sevgiyle ve omuz omuza... 💖",
+      "Finansal özgürlük, birlikte geçirilecek daha çok zaman demektir. ⏳"
+    ];
 
     // --- YARDIMCI FONKSİYONLAR ---
     const formatCurrency = (value, currency = 'TRY', decimals = 0) => {
@@ -216,7 +224,7 @@
         return Number(String(val).replace(/\./g, '').replace(',', '.')) || 0;
     };
 
-    // --- OTOMATİK FORMATLAYAN GİRİŞ BİLEŞENİ (YENİ) ---
+    // --- OTOMATİK FORMATLAYAN GİRİŞ BİLEŞENİ ---
     const CurrencyInput = ({ value, onChange, placeholder, className, isAleyna, icon = "₺" }) => {
         const formatVal = (val) => {
             if (val === undefined || val === null || val === '') return '';
@@ -255,10 +263,11 @@
     const CuteAnimals = ({ isAleyna }) => {
       return (
         <>
-          <div className="animal-bl">🦕</div>
+          {!isAleyna && <div className="animal-bl">🦕</div>}
           <div className="animal-br">🐱</div>
           <div className="animal-tl">🐸</div>
-          <div className="animal-tr">🐢</div>
+          {!isAleyna && <div className="animal-tr">🐢</div>}
+          {isAleyna && <div className="animal-tr">🐰</div>}
           {isAleyna && <div className="animal-walk">🐾🐈🐾</div>}
         </>
       );
@@ -312,7 +321,7 @@
     const AleynaThemeEffects = () => {
         const particles = useMemo(() => {
             const arr = [];
-            const icons = ['🌸', '🐾', '✨', '💖'];
+            const icons = ['🌸', '🐾', '✨', '💖', '🎀'];
             for(let i=0; i<15; i++) {
                 arr.push({
                     id: i,
@@ -368,7 +377,7 @@
 
       if (!isOpen) return null;
 
-       const slides = [
+     const slides = [
         "Hoşgeldin gülüm 🌸",
         "Seni sevdiğimi söylemiş miydim ? ☀️",
         "İyi ki varsın gülüm 🐱💖",
@@ -427,10 +436,13 @@
 
       const [showRomanticGreeting, setShowRomanticGreeting] = useState(false);
       const [hasGreeted, setHasGreeted] = useState(false);
+      
+      // Günlük Motivasyon Sözü
+      const [quote] = useState(() => MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
 
       const [marketData, setMarketData] = useState({ usd: null, eur: null, gold: null, interest: 50.0 });
 
-      // Form States (Portföy) - ŞİMDİ STRİNG OLARAK TUTULUYOR Kİ FORMATLANABİLSİN
+      // Form States (Portföy) 
       const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
       const [mmfInvested, setMmfInvested] = useState('');
       const [mmfCurrent, setMmfCurrent] = useState('');
@@ -438,11 +450,18 @@
       const [goldCurrent, setGoldCurrent] = useState('');
       const [fxInvested, setFxInvested] = useState('');
       const [fxCurrent, setFxCurrent] = useState('');
+      const [emergencyFund, setEmergencyFund] = useState(''); // YENİ: Acil Durum Fonu
       const [passiveIncome, setPassiveIncome] = useState(''); 
       const [stocks, setStocks] = useState([]);
 
-      // Form States (Bütçe & Tarihler)
-      const [salaryAmount, setSalaryAmount] = useState('');
+      // Form States (Bütçe & Tarihler) - YENİ DETAYLI MAAŞ
+      const [aliSalary, setAliSalary] = useState('');
+      const [aleynaSalary, setAleynaSalary] = useState('');
+      const [aliFood, setAliFood] = useState('');
+      const [aleynaFood, setAleynaFood] = useState('');
+      const [aliTransport, setAliTransport] = useState('');
+      const [aleynaTransport, setAleynaTransport] = useState('');
+
       const [expenseName, setExpenseName] = useState('');
       const [expenseAmount, setExpenseAmount] = useState('');
       const [expenseCat, setExpenseCat] = useState('Market');
@@ -600,7 +619,16 @@
 
           const totalSubPayments = subscriptions.reduce((sum, sub) => sum + (sub.price || 0), 0);
 
-          const remainingSalary = latestSalary.amount - totalExpenseAmount - totalDebtPayments - totalSubPayments;
+          const remainingSalary = latestSalary.totalAmount - totalExpenseAmount - totalDebtPayments - totalSubPayments;
+
+          // Günlük Bütçe Hesaplama (Ay sonuna kadar)
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth();
+          const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+          const currentDay = now.getDate();
+          const daysLeft = Math.max(1, daysInMonth - currentDay + 1);
+          const dailyBudget = remainingSalary > 0 ? remainingSalary / daysLeft : 0;
 
           let baseInvested = 0;
           const entryBeforeSalary = sortedEntries.find(e => new Date(e.date) <= new Date(latestSalary.date));
@@ -611,9 +639,9 @@
           let newlyInvested = currentTotalInvested - baseInvested;
           if(newlyInvested < 0) newlyInvested = 0;
           
-          const investedPercent = (newlyInvested / latestSalary.amount) * 100;
+          const investedPercent = latestSalary.totalAmount > 0 ? (newlyInvested / latestSalary.totalAmount) * 100 : 0;
 
-          return { latestSalary, currentExpenses, totalExpenseAmount, remainingSalary, newlyInvested, investedPercent, totalDebtPayments, totalSubPayments, expenseCategoryData };
+          return { latestSalary, currentExpenses, totalExpenseAmount, remainingSalary, dailyBudget, newlyInvested, investedPercent, totalDebtPayments, totalSubPayments, expenseCategoryData };
       }, [salaries, expenses, debts, subscriptions, sortedEntries, latestEntry]);
 
       const specialDates = useMemo(() => {
@@ -638,8 +666,8 @@
 
       const chartData = useMemo(() => {
         return [...sortedEntries].reverse().map(e => {
-            const tC = (e.mmfCurrent||0) + (e.goldCurrent||0) + (e.fxCurrent||0) + (e.stocks||[]).reduce((s, x) => s + (x.current||0), 0);
-            const tI = (e.mmfInvested||0) + (e.goldInvested||0) + (e.fxInvested||0) + (e.stocks||[]).reduce((s, x) => s + (x.invested||0), 0);
+            const tC = (e.mmfCurrent||0) + (e.goldCurrent||0) + (e.fxCurrent||0) + (e.stocks||[]).reduce((s, x) => s + (x.current||0), 0) + (e.emergencyFund||0);
+            const tI = (e.mmfInvested||0) + (e.goldInvested||0) + (e.fxInvested||0) + (e.stocks||[]).reduce((s, x) => s + (x.invested||0), 0) + (e.emergencyFund||0);
             return {
                 name: new Date(e.date).toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
                 Varlik: tC,
@@ -648,30 +676,41 @@
         });
       }, [sortedEntries]);
 
-      // Çeyiz & Ev Grafikleri İçin Data
+      // Çeyiz & Ev & Medya Grafikleri İçin Data
       const dowrySpent = dowryItems.filter(d => d.status === 'alindi').reduce((s, d) => s + (d.price || 0), 0);
       const dowryPending = dowryItems.filter(d => d.status === 'alinacak').reduce((s, d) => s + (d.price || 0), 0);
       const dowryChartData = [{ name: 'Alındı', value: dowrySpent }, { name: 'Alınacak', value: dowryPending }];
       
       const houseChartData = useMemo(() => {
-          return houses.slice(0, 6).map(h => ({ name: h.title.length > 12 ? h.title.substring(0, 12)+'...' : h.title, Fiyat: h.price }));
+          return houses.slice(0, 5).map(h => ({ name: h.title.length > 10 ? h.title.substring(0, 10)+'..' : h.title, Fiyat: h.price }));
       }, [houses]);
+
+      const mediaStatsData = useMemo(() => {
+          const stats = { film: 0, dizi: 0, oyun: 0, kitap: 0 };
+          mediaItems.filter(m => m.status === 'bitti').forEach(m => {
+              if(stats[m.mediaType] !== undefined) stats[m.mediaType]++;
+          });
+          return [
+              { name: 'Film', Adet: stats.film }, { name: 'Dizi', Adet: stats.dizi },
+              { name: 'Oyun', Adet: stats.oyun }, { name: 'Kitap', Adet: stats.kitap }
+          ];
+      }, [mediaItems]);
 
       const handleExportCSV = () => {
         if(sortedEntries.length === 0) return showToast("Dışa aktarılacak veri bulunamadı.", "warning");
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "Tarih,Dolar Kuru,PPF Yatirilan,PPF Guncel,Altin Yatirilan,Altin Guncel,Doviz Yatirilan,Doviz Guncel,Hisse Yatirilan,Hisse Guncel,Aylik Pasif Gelir,Toplam Varlik,Net Kar\n";
+        csvContent += "Tarih,Dolar Kuru,PPF Yatirilan,PPF Guncel,Altin Yatirilan,Altin Guncel,Doviz Yatirilan,Doviz Guncel,Hisse Yatirilan,Hisse Guncel,Acil Durum Fonu,Aylik Pasif Gelir,Toplam Varlik,Net Kar\n";
         
         sortedEntries.forEach(e => {
             const hInvested = (e.stocks||[]).reduce((s,x) => s + (x.invested||0), 0);
             const hCurrent = (e.stocks||[]).reduce((s,x) => s + (x.current||0), 0);
-            const totalI = (e.mmfInvested||0) + (e.goldInvested||0) + (e.fxInvested||0) + hInvested;
-            const totalC = (e.mmfCurrent||0) + (e.goldCurrent||0) + (e.fxCurrent||0) + hCurrent;
+            const totalI = (e.mmfInvested||0) + (e.goldInvested||0) + (e.fxInvested||0) + hInvested + (e.emergencyFund||0);
+            const totalC = (e.mmfCurrent||0) + (e.goldCurrent||0) + (e.fxCurrent||0) + hCurrent + (e.emergencyFund||0);
             const profit = totalC - totalI;
             
             const row = [
                 e.date, e.usdRate || 0, e.mmfInvested||0, e.mmfCurrent||0, e.goldInvested||0, e.goldCurrent||0,
-                e.fxInvested||0, e.fxCurrent||0, hInvested, hCurrent, e.passiveIncome||0, totalC, profit
+                e.fxInvested||0, e.fxCurrent||0, hInvested, hCurrent, e.emergencyFund||0, e.passiveIncome||0, totalC, profit
             ].join(",");
             csvContent += row + "\n";
         });
@@ -687,15 +726,15 @@
 
       const getStats = () => {
         if (!latestEntry) return null;
-        const totalInvested = (latestEntry.mmfInvested || 0) + (latestEntry.goldInvested || 0) + (latestEntry.fxInvested || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.invested || 0), 0);
-        const totalCurrent = (latestEntry.mmfCurrent || 0) + (latestEntry.goldCurrent || 0) + (latestEntry.fxCurrent || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0);
+        const totalInvested = (latestEntry.mmfInvested || 0) + (latestEntry.goldInvested || 0) + (latestEntry.fxInvested || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.invested || 0), 0) + (latestEntry.emergencyFund || 0);
+        const totalCurrent = (latestEntry.mmfCurrent || 0) + (latestEntry.goldCurrent || 0) + (latestEntry.fxCurrent || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0) + (latestEntry.emergencyFund || 0);
         const totalProfit = totalCurrent - totalInvested;
         const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
         const totalPassiveIncome = entries.reduce((sum, e) => sum + (e.passiveIncome || 0), 0);
         
         let weeklyChangeTry = 0;
         if (previousEntry) {
-          const prevCurrent = (previousEntry.mmfCurrent || 0) + (previousEntry.goldCurrent || 0) + (previousEntry.fxCurrent || 0) + (previousEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0);
+          const prevCurrent = (previousEntry.mmfCurrent || 0) + (previousEntry.goldCurrent || 0) + (previousEntry.fxCurrent || 0) + (previousEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0) + (previousEntry.emergencyFund || 0);
           weeklyChangeTry = totalCurrent - prevCurrent;
         }
 
@@ -719,6 +758,7 @@
         setGoldCurrent(entry.goldCurrent ? String(entry.goldCurrent).replace('.', ',') : '');
         setFxInvested(entry.fxInvested ? String(entry.fxInvested).replace('.', ',') : ''); 
         setFxCurrent(entry.fxCurrent ? String(entry.fxCurrent).replace('.', ',') : '');
+        setEmergencyFund(entry.emergencyFund ? String(entry.emergencyFund).replace('.', ',') : '');
         setPassiveIncome(entry.passiveIncome ? String(entry.passiveIncome).replace('.', ',') : '');
         
         setStocks(entry.stocks && entry.stocks.length > 0 
@@ -742,6 +782,7 @@
           mmfInvested: parseCurrency(mmfInvested), mmfCurrent: parseCurrency(mmfCurrent),
           goldInvested: parseCurrency(goldInvested), goldCurrent: parseCurrency(goldCurrent),
           fxInvested: parseCurrency(fxInvested), fxCurrent: parseCurrency(fxCurrent),
+          emergencyFund: parseCurrency(emergencyFund),
           passiveIncome: parseCurrency(passiveIncome),
           stocks: stocks.map(s => ({ ...s, name: s.name || 'İsimsiz Hisse', invested: parseCurrency(s.invested), current: parseCurrency(s.current) }))
         };
@@ -752,7 +793,7 @@
           setActiveTab('dashboard');
           showToast(isAleyna ? "Kayıt başarıyla eklendi güzelim! 💖" : "Haftalık değerlendirme başarıyla kaydedildi! 🚀");
           setMmfInvested(''); setMmfCurrent(''); setGoldInvested(''); setGoldCurrent('');
-          setFxInvested(''); setFxCurrent(''); setPassiveIncome(''); setStocks([]);
+          setFxInvested(''); setFxCurrent(''); setPassiveIncome(''); setEmergencyFund(''); setStocks([]);
         } catch (error) {
           showToast(error.message === "TIMEOUT" ? "Bağlantı Zaman Aşımı." : 'Kayıt Reddedildi: ' + error.message, "error");
         } finally { setIsSaving(false); }
@@ -765,7 +806,7 @@
         try {
             const { db, doc, setDoc } = window.firebaseApp;
             await setDoc(doc(db, 'portfoy_kayitlari_v2', 'settings'), { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) });
-            showToast(isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları başarıyla güncellendi.");
+            showToast(isAleyna ? "Ayarlarımız kaydedildi bitanem 💖" : "Sistem ayarları başarıyla güncellendi.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
       };
 
@@ -775,9 +816,17 @@
         try {
             const { db, doc, setDoc } = window.firebaseApp;
             const id = 'sal_' + Date.now();
-            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { id, type: 'salary', amount: parseCurrency(salaryAmount), date: new Date().toISOString().split('T')[0] });
-            setSalaryAmount('');
-            showToast(isAleyna ? "Maaşımız bereketli olsun canım! 💰" : "Maaş girişi başarıyla eklendi.");
+            const totalSal = parseCurrency(aliSalary) + parseCurrency(aleynaSalary) + parseCurrency(aliFood) + parseCurrency(aleynaFood) + parseCurrency(aliTransport) + parseCurrency(aleynaTransport);
+            
+            await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { 
+                id, type: 'salary', date: new Date().toISOString().split('T')[0],
+                aliSalary: parseCurrency(aliSalary), aleynaSalary: parseCurrency(aleynaSalary),
+                aliFood: parseCurrency(aliFood), aleynaFood: parseCurrency(aleynaFood),
+                aliTransport: parseCurrency(aliTransport), aleynaTransport: parseCurrency(aleynaTransport),
+                totalAmount: totalSal
+            });
+            setAliSalary(''); setAleynaSalary(''); setAliFood(''); setAleynaFood(''); setAliTransport(''); setAleynaTransport('');
+            showToast(isAleyna ? "Maaşlarımız bereketli olsun canım! 💰" : "Yeni maaş dönemi başarıyla başlatıldı.");
         } catch (error) { showToast("Kaydedilemedi.", "error"); }
       };
 
@@ -857,7 +906,7 @@
           }
       };
 
-      // --- MODÜL KAYIT İŞLEMLERİ (EV, ÇEYİZ, MEDYA) ---
+      // --- MODÜL KAYIT İŞLEMLERİ ---
       const handleSaveHouse = async (e) => {
           e.preventDefault();
           if(!user) return;
@@ -868,7 +917,7 @@
                   id, type: 'house', title: hTitle, price: parseCurrency(hPrice), link: hLink, address: hAddress, rating: Number(hRating), date: new Date().toISOString() 
               });
               setHTitle(''); setHPrice(''); setHLink(''); setHAddress(''); setHRating('3');
-              showToast(isAleyna ? "Ev adayımız eklendi aşkım 🏡💖" : "Ev adayı başarıyla eklendi.");
+              showToast(isAleyna ? "Ev adayımız eklendi bianem 🏡💖" : "Ev adayı başarıyla eklendi.");
           } catch (error) { showToast("Kaydedilemedi.", "error"); }
       };
 
@@ -988,6 +1037,7 @@
 
       const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totalInstallments || 0));
       const activeCards = debts.filter(d => d.debtType === 'card' && d.totalAmount > 0);
+      const totalActiveDebt = [...activeLoans, ...activeCards].reduce((sum, d) => sum + d.totalAmount, 0);
 
       return (
         <div className={`max-w-md md:max-w-5xl mx-auto min-h-screen relative z-10 ${isAleyna ? 'bg-pink-50/30' : ''}`}>
@@ -1004,6 +1054,11 @@
             <div className={`absolute top-0 right-0 w-64 h-64 ${isAleyna ? 'bg-pink-400' : 'bg-indigo-500'} opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3`}></div>
             {isAleyna && <span className="absolute top-10 right-10 text-3xl opacity-20 cute-float">🐱</span>}
             
+            {/* MOTİVASYON SÖZÜ */}
+            <div className="relative z-10 text-center mb-6 px-4">
+                <p className="text-xs md:text-sm font-medium text-white/80 italic drop-shadow-md">"{quote}"</p>
+            </div>
+
             <div className="relative z-10 flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 {user?.photoURL ? (
@@ -1074,12 +1129,17 @@
 
               <button onClick={() => setActiveTab('media')} className={`shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition ${activeTab === 'media' ? (isAleyna ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-film text-xl md:text-lg ${isAleyna && activeTab === 'media' ? 'cute-float' : ''}`}></i>
-                <span className="text-[10px] md:text-sm font-bold">Medya & Kitaplık</span>
+                <span className="text-[10px] md:text-sm font-bold">Kültür Sanat</span>
               </button>
 
               <button onClick={() => setActiveTab('add')} className={`shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition ${activeTab === 'add' ? (isAleyna ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`${isAleyna && activeTab === 'add' ? 'fa-solid fa-paw' : 'fa-solid fa-circle-plus'} text-xl md:text-lg ${isAleyna && activeTab === 'add' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Portföy Gir</span>
+              </button>
+              
+              <button onClick={() => setActiveTab('history')} className={`shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition ${activeTab === 'history' ? (isAleyna ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className={`${isAleyna && activeTab === 'history' ? 'fa-solid fa-cat' : 'fa-solid fa-clock-rotate-left'} text-xl md:text-lg ${isAleyna && activeTab === 'history' ? 'cute-float' : ''}`}></i>
+                <span className="text-[10px] md:text-sm font-bold">Geçmiş</span>
               </button>
               
             </div>
@@ -1092,6 +1152,17 @@
             {activeTab === 'dashboard' && (
               <div className="space-y-6 pb-6 animate-fade-in relative">
                 
+                {/* YAKLAŞAN BORÇ UYARISI */}
+                {totalActiveDebt > 0 && (
+                    <div className={`bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl flex items-center justify-between shadow-sm animate-pulse`}>
+                        <div className="flex items-center gap-3">
+                            <i className="fa-solid fa-circle-exclamation text-xl"></i>
+                            <span className="font-bold text-sm">Dikkat: Toplam {formatCurrency(totalActiveDebt)} aktif borcunuz bulunuyor. Taksitleri aksatmayın!</span>
+                        </div>
+                        <button onClick={() => setActiveTab('debts')} className="text-xs font-black bg-rose-200 px-3 py-1.5 rounded-lg hover:bg-rose-300 transition">İncele</button>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {(specialDates.engDays !== null || specialDates.marDays !== null) && (
                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-rose-50 to-pink-50 border-pink-100' : 'from-indigo-50 to-purple-50 border-indigo-100'} rounded-3xl p-5 shadow-sm border relative overflow-hidden flex flex-col justify-center`}>
@@ -1117,33 +1188,32 @@
                    )}
 
                    {budgetStats?.latestSalary && (
-                       <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-orange-50 border-pink-100' : 'from-blue-50 to-emerald-50 border-blue-100'} rounded-3xl p-5 shadow-sm border relative overflow-hidden`}>
+                       <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-orange-50 border-pink-100' : 'from-blue-50 to-emerald-50 border-blue-100'} rounded-3xl p-5 shadow-sm border relative overflow-hidden flex flex-col justify-between`}>
                            <h3 className={`text-base font-extrabold ${isAleyna ? 'text-pink-700' : 'text-blue-800'} mb-3 flex items-center gap-2`}>
-                               <i className="fa-solid fa-money-bill-wave"></i> Bütçe & Harcama Durumu
+                               <i className="fa-solid fa-wallet"></i> Aylık Kalan Nakit Durumu
                            </h3>
                            <div className="flex justify-between items-end mb-2 relative z-10 border-b border-slate-200/50 pb-2">
                               <div>
-                                  <p className="text-[10px] font-bold text-slate-500 uppercase">Kalan Net Bütçe</p>
-                                  <h2 className={`text-2xl font-black ${budgetStats.remainingSalary >= 0 ? (isAleyna ? 'text-pink-600' : 'text-emerald-600') : 'text-rose-600'}`}>
+                                  <h2 className={`text-3xl font-black ${budgetStats.remainingSalary >= 0 ? (isAleyna ? 'text-pink-600' : 'text-emerald-600') : 'text-rose-600'}`}>
                                       {formatCurrency(budgetStats.remainingSalary)}
                                   </h2>
                               </div>
                               <div className="text-right">
-                                  <p className="text-[10px] font-bold text-slate-500 uppercase">Aylık Yük</p>
-                                  <p className="text-sm font-bold text-rose-500">-{formatCurrency(budgetStats.totalExpenseAmount + budgetStats.totalDebtPayments + budgetStats.totalSubPayments)}</p>
+                                  <p className="text-[10px] font-bold text-slate-500 uppercase">Günlük Limitiniz</p>
+                                  <p className="text-lg font-black text-blue-600">{formatCurrency(budgetStats.dailyBudget)}</p>
                               </div>
                            </div>
                            
                            {/* MAAŞ - BORÇ - HARCAMA DETAYI */}
                            <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-2">
-                               <span>Maaş: {formatCurrency(budgetStats.latestSalary.amount)}</span>
-                               <span>Taksit+Abonelik: -{formatCurrency(budgetStats.totalDebtPayments + budgetStats.totalSubPayments)}</span>
+                               <span>Maaşlar: {formatCurrency(budgetStats.latestSalary.totalAmount)}</span>
+                               <span>Sabit Yük: -{formatCurrency(budgetStats.totalExpenseAmount + budgetStats.totalDebtPayments + budgetStats.totalSubPayments)}</span>
                            </div>
                            
                            {budgetStats.investedPercent > 0 && (
-                               <div className={`mt-2 p-2 rounded-xl ${isAleyna ? 'bg-pink-100/50 text-pink-700' : 'bg-emerald-100/50 text-emerald-700'} text-xs font-bold flex items-center gap-2`}>
-                                   <i className="fa-solid fa-medal text-lg"></i>
-                                   <span>Maaşın <b>%{budgetStats.investedPercent.toFixed(1)}</b>'i yatırıma gitti.</span>
+                               <div className={`mt-1 p-2 rounded-xl ${budgetStats.investedPercent > 30 ? 'bg-amber-100 text-amber-700' : (isAleyna ? 'bg-pink-100/50 text-pink-700' : 'bg-emerald-100/50 text-emerald-700')} text-xs font-bold flex items-center gap-2`}>
+                                   <i className={`fa-solid ${budgetStats.investedPercent > 30 ? 'fa-trophy' : 'fa-medal'} text-lg`}></i>
+                                   <span>{budgetStats.investedPercent > 30 ? 'Tasarruf Şampiyonu! ' : 'Harika! '} Maaşın <b>%{budgetStats.investedPercent.toFixed(1)}</b>'i yatırıma gitti.</span>
                                </div>
                            )}
                        </div>
@@ -1189,36 +1259,6 @@
                         </div>
                     )}
 
-                    {window.Recharts && chartData.length > 0 && (
-                        <div className={`bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'}`}>
-                            <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
-                                <i className={`fa-solid fa-chart-area ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Serüven Grafiği {isAleyna && <span className="cute-float text-sm">🦋</span>}
-                            </h3>
-                            <div className="h-64 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorVarlik" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor={isAleyna ? '#ec4899' : '#6366f1'} stopOpacity={0.8}/>
-                                                <stop offset="95%" stopColor={isAleyna ? '#ec4899' : '#6366f1'} stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}} />
-                                        <YAxis hide={true} domain={['dataMin - 1000', 'auto']} />
-                                        <Tooltip 
-                                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-                                            formatter={(value) => formatCurrency(value)}
-                                            labelStyle={{ color: '#64748b', marginBottom: '0.25rem' }}
-                                        />
-                                        <Area type="monotone" name="Toplam Varlık" dataKey="Varlik" stroke={isAleyna ? '#db2777' : '#4f46e5'} strokeWidth={4} fillOpacity={1} fill="url(#colorVarlik)" />
-                                        <Area type="monotone" name="Yatırılan" dataKey="Yatirilan" stroke="#cbd5e1" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    )}
-
                     <div className={`bg-gradient-to-br ${isAleyna ? 'from-rose-500 via-pink-600 to-purple-600 shadow-pink-600/30' : 'from-indigo-900 via-slate-900 to-slate-900 shadow-indigo-900/20'} rounded-[2rem] p-6 md:p-8 shadow-2xl text-white relative overflow-hidden transition-colors duration-1000`}>
                       <i className={`fa-solid ${isAleyna ? 'fa-heart' : 'fa-wallet'} absolute -right-6 -bottom-6 text-[150px] text-white/10 transform -rotate-12`}></i>
                       
@@ -1235,9 +1275,13 @@
                             </p>
                           )}
                         </div>
+                        {/* ANA EKRANDAN DÜZENLEME BUTONU */}
+                        <button onClick={() => handleEditEntry(latestEntry)} className={`hidden md:flex cute-bounce px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm font-bold items-center gap-2 backdrop-blur-sm border border-white/20`}>
+                            <i className="fa-solid fa-pen-to-square"></i> Son Kaydı Düzenle
+                        </button>
                       </div>
                       
-                      <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-2 gap-4 relative z-10">
+                      <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
                         <div>
                           <p className="text-white/60 text-xs font-bold uppercase mb-1">Toplam Yatırılan</p>
                           <p className="text-xl font-bold">{formatCurrency(stats.totalInvested)}</p>
@@ -1249,10 +1293,20 @@
                             {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
                           </p>
                         </div>
+                        <div className="col-span-2 md:col-span-1">
+                          <p className="text-white/60 text-xs font-bold uppercase mb-1 flex items-center gap-1"><i className="fa-solid fa-shield-cat"></i> Acil Durum Fonu</p>
+                          <p className="text-xl font-bold text-amber-300">{formatCurrency(latestEntry?.emergencyFund || 0)}</p>
+                        </div>
                       </div>
+                      
+                      {/* MOBİL İÇİN DÜZENLE BUTONU */}
+                      <button onClick={() => handleEditEntry(latestEntry)} className={`md:hidden mt-6 w-full cute-bounce py-3 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm font-bold flex items-center justify-center gap-2 backdrop-blur-sm border border-white/20`}>
+                          <i className="fa-solid fa-pen-to-square"></i> Son Kaydı Düzenle
+                      </button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* VARLIK DAĞILIMI */}
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 h-full">
                             <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
                                 <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Varlık Dağılımı
@@ -1271,17 +1325,102 @@
                             </div>
                         </div>
 
-                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-100' : 'from-emerald-50 to-teal-50 border-emerald-100'} rounded-3xl p-6 shadow-sm border h-full flex flex-col justify-center relative overflow-hidden`}>
-                            {isAleyna && <span className="absolute -right-4 -bottom-4 text-6xl opacity-10">🐱</span>}
-                            <i className={`fa-solid fa-hand-holding-dollar absolute -right-2 -bottom-2 text-[80px] ${isAleyna ? 'text-pink-500/10' : 'text-emerald-500/10'} transform -rotate-12`}></i>
-                            <p className={`${isAleyna ? 'text-pink-600' : 'text-emerald-700'} text-xs font-bold tracking-widest uppercase mb-2 flex items-center gap-2`}>
-                                Toplam Pasif Gelir / Temettü {isAleyna && <span className="text-lg">💖</span>}
-                            </p>
-                            <h2 className={`text-4xl font-black ${isAleyna ? 'text-pink-700' : 'text-emerald-800'} tracking-tighter`}>
-                                {formatCurrency(stats.totalPassiveIncome)}
-                            </h2>
-                            <p className={`mt-3 text-xs font-medium ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}>* Yatırımlarınızın size çalışarak kazandırdığı toplam nakit tutardır.</p>
-                        </div>
+                        {/* AYLIK HARCAMA GRAFİĞİ (PIE) */}
+                        {window.Recharts && budgetStats?.expenseCategoryData && budgetStats.expenseCategoryData.length > 0 ? (
+                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
+                                <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Bu Ayın Harcamaları
+                                </h3>
+                                <div className="h-40 w-full mt-2">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={budgetStats.expenseCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
+                                                {budgetStats.expenseCategoryData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
+                                            <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-100' : 'from-emerald-50 to-teal-50 border-emerald-100'} rounded-3xl p-6 shadow-sm border h-full flex flex-col justify-center relative overflow-hidden`}>
+                                {isAleyna && <span className="absolute -right-4 -bottom-4 text-6xl opacity-10">🐱</span>}
+                                <i className={`fa-solid fa-hand-holding-dollar absolute -right-2 -bottom-2 text-[80px] ${isAleyna ? 'text-pink-500/10' : 'text-emerald-500/10'} transform -rotate-12`}></i>
+                                <p className={`${isAleyna ? 'text-pink-600' : 'text-emerald-700'} text-xs font-bold tracking-widest uppercase mb-2 flex items-center gap-2`}>
+                                    Toplam Pasif Gelir / Temettü {isAleyna && <span className="text-lg">💖</span>}
+                                </p>
+                                <h2 className={`text-4xl font-black ${isAleyna ? 'text-pink-700' : 'text-emerald-800'} tracking-tighter`}>
+                                    {formatCurrency(stats.totalPassiveIncome)}
+                                </h2>
+                                <p className={`mt-3 text-xs font-medium ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}>* Yatırımlarınızın size çalışarak kazandırdığı toplam nakit tutardır.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MODÜL ÖZET GRAFİKLERİ */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* ÇEYİZ GRAFİĞİ */}
+                        {window.Recharts && (dowrySpent > 0 || dowryPending > 0) && (
+                            <div className={`bg-white rounded-3xl p-5 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
+                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Durumu
+                                </h3>
+                                <div className="h-32 w-full relative z-10">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2}>
+                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
+                                                <Cell fill="#e2e8f0" />
+                                            </Pie>
+                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex justify-between text-[10px] font-bold px-1 relative z-10 mt-2">
+                                    <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
+                                    <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* EV ADAYLARI GRAFİĞİ */}
+                        {window.Recharts && houseChartData.length > 0 && (
+                            <div className={`bg-white rounded-3xl p-5 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
+                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Ev Endeksi
+                                </h3>
+                                <div className="h-32 w-full relative z-10">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={houseChartData}>
+                                            <Tooltip formatter={(val) => formatCurrency(val)} cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px'}}/>
+                                            <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* MEDYA GRAFİĞİ */}
+                        {window.Recharts && mediaStatsData.some(m => m.Adet > 0) && (
+                            <div className={`bg-white rounded-3xl p-5 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
+                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-book-open-reader ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kültür Sanat
+                                </h3>
+                                <div className="h-32 w-full relative z-10">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:10, left:-20, bottom:0}}>
+                                            <XAxis type="number" hide />
+                                            <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
+                                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px'}}/>
+                                            <Bar dataKey="Adet" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 4, 4, 0]} barSize={15} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -1299,7 +1438,7 @@
                         </button>
                         <button onClick={() => showReport('inflation')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
                           <div className={`w-12 h-12 ${isAleyna ? 'bg-rose-50 text-rose-500' : 'bg-amber-50 text-amber-500'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}><i className="fa-solid fa-shield-halved"></i></div>
-                          <div><h4 className="font-extrabold text-slate-800 text-base">Enflasyon & Kur Raporu</h4><p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Portföyünüzün Dolar karşısındaki gerçek reel satın alma gücü.</p></div>
+                          <div><h4 className="font-extrabold text-slate-800 text-base">Enflasyon & Kur Raporu</h4><p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">Portföyünüzün Dolar karşısındaki gerçek satın alma gücü.</p></div>
                         </button>
                       </div>
                     </div>
@@ -1314,14 +1453,45 @@
                   
                   <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
                       <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                          <i className={`fa-solid fa-money-bill-wave ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Maaş Girişi
+                          <i className={`fa-solid fa-money-bill-wave ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Detaylı Maaş/Hak Ediş Girişi
                       </h2>
-                      <p className="text-slate-500 text-sm mb-6 font-medium">Yeni maaşınızı girdiğinizde bir önceki dönemin harcamaları sıfırlanır ve yeni bütçe döngünüz başlar.</p>
+                      <p className="text-slate-500 text-sm mb-6 font-medium">Gelirlerinizi ayrıntılı girdiğinizde bir önceki dönemin harcamaları sıfırlanır ve yeni bütçe döngünüz başlar.</p>
                       
-                      <form onSubmit={handleSaveSalary} className="flex flex-col sm:flex-row gap-4">
-                          <CurrencyInput value={salaryAmount} onChange={setSalaryAmount} placeholder="Aylık toplam yatan maaşı girin" isAleyna={isAleyna} />
-                          <button type="submit" className={`cute-bounce text-white font-bold py-4 px-8 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'}`}>
-                              <i className="fa-solid fa-check"></i> Maaşı Kaydet
+                      <form onSubmit={handleSaveSalary} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Ali'nin Maaşı</label>
+                                  <CurrencyInput value={aliSalary} onChange={setAliSalary} placeholder="Ali Maaş (TL)" isAleyna={isAleyna} />
+                              </div>
+                              <div className="space-y-2">
+                                  <label className={`text-xs font-bold ${isAleyna ? 'text-pink-400' : 'text-slate-400'} uppercase ml-2`}>Aleyna'nın Maaşı {isAleyna && '💖'}</label>
+                                  <CurrencyInput value={aleynaSalary} onChange={setAleynaSalary} placeholder="Aleyna Maaş (TL)" isAleyna={isAleyna} />
+                              </div>
+                              <div className="space-y-2">
+                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Ali Yemek & Yol</label>
+                                  <div className="flex gap-2">
+                                      <CurrencyInput value={aliFood} onChange={setAliFood} placeholder="Yemek" icon="🍔" isAleyna={isAleyna} />
+                                      <CurrencyInput value={aliTransport} onChange={setAliTransport} placeholder="Yol" icon="🚌" isAleyna={isAleyna} />
+                                  </div>
+                              </div>
+                              <div className="space-y-2">
+                                  <label className={`text-xs font-bold ${isAleyna ? 'text-pink-400' : 'text-slate-400'} uppercase ml-2`}>Aleyna Yemek & Yol</label>
+                                  <div className="flex gap-2">
+                                      <CurrencyInput value={aleynaFood} onChange={setAleynaFood} placeholder="Yemek" icon="🍔" isAleyna={isAleyna} />
+                                      <CurrencyInput value={aleynaTransport} onChange={setAleynaTransport} placeholder="Yol" icon="🚌" isAleyna={isAleyna} />
+                                  </div>
+                              </div>
+                          </div>
+                          
+                          <div className={`mt-4 p-4 rounded-xl flex justify-between items-center bg-slate-50 border border-slate-100`}>
+                              <span className="font-bold text-slate-500 uppercase text-sm">Toplam Hane Geliri:</span>
+                              <span className={`text-2xl font-black ${isAleyna ? 'text-pink-600' : 'text-emerald-600'}`}>
+                                  {formatCurrency(parseCurrency(aliSalary) + parseCurrency(aleynaSalary) + parseCurrency(aliFood) + parseCurrency(aleynaFood) + parseCurrency(aliTransport) + parseCurrency(aleynaTransport))}
+                              </span>
+                          </div>
+
+                          <button type="submit" className={`cute-bounce w-full text-white font-bold py-4 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'}`}>
+                              <i className="fa-solid fa-check"></i> Bütçe Dönemini Başlat
                           </button>
                       </form>
                   </div>
@@ -1717,8 +1887,11 @@
                   <div className="space-y-4">
                       
                       <div className={`bg-gradient-to-r ${isAleyna ? 'from-pink-50 to-white border-pink-200' : 'from-emerald-50 to-white border-emerald-200'} border p-5 rounded-[1.5rem]`}>
-                        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className={`fa-solid fa-hand-holding-dollar ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}></i> Bu Ayki Pasif Gelir / Temettü</h3>
-                        <CurrencyInput value={passiveIncome} onChange={setPassiveIncome} placeholder="Bu ay hisse veya faizden elde edilen nakit getiriyi yazın (İsteğe Bağlı)" isAleyna={isAleyna} />
+                        <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className={`fa-solid fa-hand-holding-dollar ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}></i> Ekstra Gelirler / Acil Durum Fonu</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <CurrencyInput value={passiveIncome} onChange={setPassiveIncome} placeholder="Bu ayki Temettü / Faiz Getirisi" isAleyna={isAleyna} />
+                            <CurrencyInput value={emergencyFund} onChange={setEmergencyFund} placeholder="Acil Durum Fonu (Kenardaki Nakit)" icon="🛡️" isAleyna={isAleyna} />
+                        </div>
                       </div>
 
                       <div className="bg-slate-50 border border-slate-200 p-5 rounded-[1.5rem]">
@@ -1799,8 +1972,8 @@
 
                 <div className="space-y-4 relative z-10">
                   {sortedEntries.map((entry) => {
-                    const totalI = (entry.mmfInvested||0) + (entry.goldInvested||0) + (entry.fxInvested||0) + (entry.stocks||[]).reduce((s, x) => s + (x.invested||0), 0);
-                    const totalC = (entry.mmfCurrent||0) + (entry.goldCurrent||0) + (entry.fxCurrent||0) + (entry.stocks||[]).reduce((s, x) => s + (x.current||0), 0);
+                    const totalI = (entry.mmfInvested||0) + (entry.goldInvested||0) + (entry.fxInvested||0) + (entry.stocks||[]).reduce((s, x) => s + (x.invested||0), 0) + (entry.emergencyFund||0);
+                    const totalC = (entry.mmfCurrent||0) + (entry.goldCurrent||0) + (entry.fxCurrent||0) + (entry.stocks||[]).reduce((s, x) => s + (x.current||0), 0) + (entry.emergencyFund||0);
                     const profit = totalC - totalI;
                     
                     return (

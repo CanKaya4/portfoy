@@ -36,7 +36,7 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Romantik Karşılama Animasyonları */
+    /* Romantik Karşılama Animasyonları - YENİ VE UZUN */
     @keyframes floatUp {
       0% { transform: translateY(110vh) rotate(0deg) scale(0.8); opacity: 0; }
       10% { opacity: 1; }
@@ -48,8 +48,10 @@
       bottom: -100px;
       animation: floatUp ease-in forwards;
       z-index: 101;
+      pointer-events: none;
     }
 
+    /* Uçan Kelebek Animasyonu */
     @keyframes flutter {
       0% { transform: translateY(110vh) translateX(0) rotate(0deg); opacity: 0; }
       10% { opacity: 1; }
@@ -62,6 +64,7 @@
       bottom: -50px;
       animation: flutter ease-in-out forwards;
       z-index: 102;
+      pointer-events: none;
     }
 
     @keyframes heartPulse {
@@ -72,14 +75,15 @@
       animation: heartPulse 2.5s infinite ease-in-out;
     }
 
+    /* Slayt Geçiş Animasyonu */
     .slide-fade {
-      animation: slideFade 3.5s ease-in-out forwards;
+      animation: slideFade 4s ease-in-out forwards;
     }
     @keyframes slideFade {
-      0% { opacity: 0; transform: scale(0.9) translateY(20px); }
-      15% { opacity: 1; transform: scale(1) translateY(0); }
-      85% { opacity: 1; transform: scale(1) translateY(0); }
-      100% { opacity: 0; transform: scale(1.05) translateY(-20px); }
+      0% { opacity: 0; transform: scale(0.85) translateY(30px); filter: blur(5px); }
+      15% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+      85% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+      100% { opacity: 0; transform: scale(1.1) translateY(-20px); filter: blur(5px); }
     }
 
     @keyframes fadeOutScreen {
@@ -88,9 +92,22 @@
       100% { opacity: 0; visibility: hidden; pointer-events: none; }
     }
     .romantic-screen {
-      animation: fadeOutScreen 14.5s forwards;
+      animation: fadeOutScreen 17s forwards;
     }
 
+    /* ALEYNA TEMA ANİMASYONLARI (TATLI SIÇRAMALAR) */
+    @keyframes float-gentle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    .cute-bounce:active {
+        transform: scale(0.92);
+    }
+    .cute-float {
+        animation: float-gentle 3s ease-in-out infinite;
+    }
+
+    /* Toast Animasyonu */
     @keyframes slideUp {
       from { transform: translateY(100%); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
@@ -108,7 +125,6 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    // getFirestore'a geri dönüldü, Long Polling kaldırıldı.
     import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -158,14 +174,15 @@
     };
 
     // --- MODAL BİLEŞENİ ---
-    const ReportModal = ({ isOpen, onClose, title, icon, content }) => {
+    const ReportModal = ({ isOpen, onClose, title, icon, content, isAleyna }) => {
       if (!isOpen) return null;
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden relative">
+            {isAleyna && <span className="absolute top-4 right-14 text-2xl opacity-30 cute-float">🌸</span>}
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+              <h3 className={`text-xl font-bold ${isAleyna ? 'text-pink-600' : 'text-slate-800'} flex items-center gap-3`}>
+                <div className={`w-10 h-10 rounded-xl ${isAleyna ? 'bg-pink-100 text-pink-500' : 'bg-indigo-100 text-indigo-600'} flex items-center justify-center`}>
                   <i className={`fa-solid ${icon}`}></i>
                 </div>
                 {title}
@@ -182,6 +199,35 @@
       );
     };
 
+    // --- ALEYNA'YA ÖZEL ARKA PLAN EFEKTLERİ ---
+    const AleynaThemeEffects = () => {
+        const particles = useMemo(() => {
+            const arr = [];
+            const icons = ['🌸', '🐾', '✨', '💖'];
+            for(let i=0; i<15; i++) {
+                arr.push({
+                    id: i,
+                    icon: icons[Math.floor(Math.random() * icons.length)],
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDuration: `${5 + Math.random() * 5}s`,
+                    animationDelay: `${Math.random() * 2}s`
+                });
+            }
+            return arr;
+        }, []);
+
+        return (
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
+                {particles.map(p => (
+                    <div key={p.id} className="absolute cute-float text-xl" style={{left: p.left, top: p.top, animationDuration: p.animationDuration, animationDelay: p.animationDelay}}>
+                        {p.icon}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     // --- ROMANTİK KARŞILAMA BİLEŞENİ (ALEYNA'YA ÖZEL SLAYT) ---
     const RomanticGreeting = ({ isOpen }) => {
       const [slideIndex, setSlideIndex] = useState(0);
@@ -189,16 +235,16 @@
       // ÇÖZÜM: Hook (useMemo), 'if (!isOpen)' kontrolünden ÖNCE çağrılmalıdır. (Rules of Hooks)
       const effects = useMemo(() => {
         const items = [];
-        const icons = ['🌸', '🌺', '🌷', '🦋', '🦋', '✨', '💖', '💐'];
-        for(let i = 0; i < 40; i++) {
+        const icons = ['🌸', '🌺', '🌷', '🦋', '🐱', '✨', '💖', '💐', '🐾'];
+        for(let i = 0; i < 45; i++) {
           const isButterfly = Math.random() > 0.7;
           items.push({
             id: i,
             icon: icons[Math.floor(Math.random() * icons.length)],
             left: `${Math.random() * 100}%`,
-            duration: `${4 + Math.random() * 4}s`,
+            duration: `${5 + Math.random() * 5}s`,
             delay: `${Math.random() * 8}s`,
-            size: `${1.5 + Math.random() * 2}rem`,
+            size: `${1.5 + Math.random() * 2.5}rem`,
             isButterfly
           });
         }
@@ -209,17 +255,17 @@
         if (!isOpen) return;
         const interval = setInterval(() => {
           setSlideIndex(prev => prev + 1);
-        }, 3500);
+        }, 4000); // Her slayt 4 saniye
         return () => clearInterval(interval);
       }, [isOpen]);
 
       if (!isOpen) return null;
 
       const slides = [
-        "Hoş geldin Gülüm... 🌹",
-        "Günün güzel geçsin Güzelim 🌸",
-        "Seni çok seviyorum Canım... 💖",
-        "Portföyüne hoş geldin... ✨"
+        "Dünyanın en güzel nişanlısı gelmiş... 🌸",
+        "Gülüşüyle günüme güneş açtıranım ☀️",
+        "Hoş geldin canımın içi, kedilerin annesi 🐱💖",
+        "Birlikte kuracağımız o güzel geleceğe... 🏡✨"
       ];
 
       return (
@@ -233,12 +279,13 @@
           <div className="relative z-[102] w-full max-w-lg px-6 flex flex-col items-center">
              {slides.map((text, idx) => (
                 slideIndex === idx && (
-                  <div key={idx} className="slide-fade flex flex-col items-center w-full">
-                    <div className="w-24 h-24 bg-gradient-to-tr from-rose-400 to-pink-500 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-pink-500/40 mb-8 heart-pulse">
-                       <i className="fa-solid fa-heart text-5xl text-white"></i>
+                  <div key={idx} className="slide-fade flex flex-col items-center w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-28 h-28 bg-gradient-to-tr from-rose-400 to-pink-500 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-pink-500/40 mb-8 heart-pulse relative">
+                       <i className="fa-solid fa-heart text-6xl text-white"></i>
+                       <span className="absolute -top-4 -right-4 text-3xl">🐱</span>
                     </div>
-                    <div className="bg-white/40 backdrop-blur-xl px-8 py-10 rounded-[3rem] border border-white/60 shadow-xl w-full text-center">
-                        <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600 drop-shadow-sm leading-tight">
+                    <div className="bg-white/50 backdrop-blur-xl px-8 py-10 rounded-[3rem] border border-white/60 shadow-xl w-full text-center">
+                        <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600 drop-shadow-sm leading-tight">
                           {text}
                         </h1>
                     </div>
@@ -258,7 +305,7 @@
       const [activeTab, setActiveTab] = useState('dashboard');
       const [toast, setToast] = useState(null);
       const [selectedReport, setSelectedReport] = useState(null);
-      const [isSaving, setIsSaving] = useState(false); // Kaydet Butonu Yükleniyor Animasyonu
+      const [isSaving, setIsSaving] = useState(false);
 
       const [showRomanticGreeting, setShowRomanticGreeting] = useState(false);
       const [hasGreeted, setHasGreeted] = useState(false);
@@ -273,6 +320,9 @@
       const [fxInvested, setFxInvested] = useState('');
       const [fxCurrent, setFxCurrent] = useState('');
       const [stocks, setStocks] = useState([]);
+
+      // --- ALEYNA KONTROLÜ (TEMA İÇİN) ---
+      const isAleyna = user?.email === 'aleynaerdn2294@gmail.com';
 
       const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -320,19 +370,18 @@
           if (currentUser && currentUser.email === 'aleynaerdn2294@gmail.com' && !hasGreeted) {
             setShowRomanticGreeting(true);
             setHasGreeted(true);
-            setTimeout(() => setShowRomanticGreeting(false), 14500); 
+            setTimeout(() => setShowRomanticGreeting(false), 17000); // 16.5 Saniye sürer
           }
           if(!currentUser) setLoading(false);
         });
         return () => unsubscribe();
       }, [isFirebaseReady, hasGreeted]);
 
-      // Veritabanı Dinleme (Sonsuz yüklemeyi önleyen Timeout eklendi)
+      // Veritabanı Dinleme
       useEffect(() => {
         if (!isFirebaseReady || !user) return;
         const { db, collection, onSnapshot } = window.firebaseApp;
         
-        // Eğer 6 saniye içinde veri gelmezse "Sistem Hazırlanıyor" ekranını zorla kapat
         const fallbackTimer = setTimeout(() => {
           if (loading) {
             setLoading(false);
@@ -349,7 +398,6 @@
         }, (error) => {
           clearTimeout(fallbackTimer);
           setLoading(false);
-          console.error("Firebase Snapshot Error:", error);
         });
 
         return () => {
@@ -430,12 +478,11 @@
       const handleRemoveStock = (id) => setStocks(stocks.filter(s => s.id !== id));
       const handleStockChange = (id, field, value) => setStocks(stocks.map(s => s.id === id ? { ...s, [field]: value } : s));
 
-      // KAYDETME İŞLEMİ (Tepkisiz kalmayı çözen yapı)
       const handleSaveEntry = async (e) => {
         e.preventDefault();
         if (!user) return;
         
-        setIsSaving(true); // Buton animasyonunu başlat
+        setIsSaving(true);
         
         const { db, doc, setDoc } = window.firebaseApp;
         const entryId = Date.now().toString();
@@ -454,25 +501,24 @@
         };
 
         try {
-          // Eğer tarayıcı engelliyorsa sonsuza kadar beklemesin diye 6 Saniyelik Timeout
           const savePromise = setDoc(doc(db, 'portfoy_kayitlari_v2', docIdToSave), newEntry);
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 6000));
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 15000));
           
           await Promise.race([savePromise, timeoutPromise]);
           
           setActiveTab('dashboard');
-          showToast("Haftalık değerlendirme başarıyla kaydedildi! 🚀");
+          showToast(isAleyna ? "Kayıt başarıyla eklendi güzelim! 💖" : "Haftalık değerlendirme başarıyla kaydedildi! 🚀");
           
           setMmfInvested(''); setMmfCurrent(''); setGoldInvested(''); setGoldCurrent('');
           setFxInvested(''); setFxCurrent(''); setStocks([]);
         } catch (error) {
           if(error.message === "TIMEOUT") {
-             showToast("Hata: Kayıt ulaştırılamadı! Brave kalkanlarını veya reklam engelleyicinizi bu sayfa için kapatmalısınız.", "error");
+             showToast("Bağlantı Zaman Aşımı: Şirket güvenlik duvarı, Antivirüs veya Firebase Kuralları engelliyor olabilir.", "error");
           } else {
-             showToast('Kayıt başarısız: ' + error.message, "error");
+             showToast('Kayıt Reddedildi: ' + (error.code || error.message) + ' (Firebase Kurallarını Kontrol Edin)', "error");
           }
         } finally {
-          setIsSaving(false); // Buton animasyonunu bitir
+          setIsSaving(false);
         }
       };
 
@@ -566,110 +612,122 @@
       }
 
       return (
-        <div className="max-w-md md:max-w-5xl mx-auto min-h-screen relative">
+        <div className={`max-w-md md:max-w-5xl mx-auto min-h-screen relative z-10 ${isAleyna ? 'bg-pink-50/30' : ''}`}>
+          
+          {isAleyna && <AleynaThemeEffects />}
+
           {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-          <ReportModal isOpen={selectedReport !== null} onClose={() => setSelectedReport(null)} {...selectedReport} />
+          <ReportModal isOpen={selectedReport !== null} onClose={() => setSelectedReport(null)} {...selectedReport} isAleyna={isAleyna} />
           <RomanticGreeting isOpen={showRomanticGreeting} />
 
           {/* APP HEADER */}
-          <header className="bg-gradient-to-b from-slate-900 to-slate-800 text-white pt-10 pb-6 px-6 md:rounded-b-3xl shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+          <header className={`bg-gradient-to-b ${isAleyna ? 'from-rose-900 to-pink-900' : 'from-slate-900 to-slate-800'} text-white pt-10 pb-6 px-6 md:rounded-b-3xl shadow-xl relative overflow-hidden transition-colors duration-1000`}>
+            <div className={`absolute top-0 right-0 w-64 h-64 ${isAleyna ? 'bg-pink-400' : 'bg-indigo-500'} opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3`}></div>
+            {isAleyna && <span className="absolute top-10 right-10 text-3xl opacity-20 cute-float">🐱</span>}
             
             <div className="relative z-10 flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 {user?.photoURL ? (
-                    <img src={user.photoURL} alt="Profil" className="w-12 h-12 rounded-full border-2 border-slate-700 shadow-md" />
+                    <img src={user.photoURL} alt="Profil" className={`w-12 h-12 rounded-full border-2 ${isAleyna ? 'border-pink-300' : 'border-slate-700'} shadow-md`} />
                 ) : (
-                    <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-xl border-2 border-slate-700">
+                    <div className={`w-12 h-12 ${isAleyna ? 'bg-pink-500' : 'bg-indigo-600'} rounded-full flex items-center justify-center font-bold text-xl border-2 ${isAleyna ? 'border-pink-300' : 'border-slate-700'}`}>
                         {user?.displayName ? user.displayName.charAt(0) : 'A'}
                     </div>
                 )}
                 <div>
-                  <p className="text-slate-400 text-xs font-bold tracking-wider uppercase">Hoş Geldin</p>
-                  <h1 className="text-xl font-extrabold">{user?.displayName?.split(' ')[0] || 'Yatırımcı'}</h1>
+                  <p className="text-slate-300 text-xs font-bold tracking-wider uppercase">Hoş Geldin</p>
+                  <h1 className="text-xl font-extrabold flex items-center gap-2">
+                    {user?.displayName?.split(' ')[0] || 'Yatırımcı'} 
+                    {isAleyna && <span className="text-sm">🌸</span>}
+                  </h1>
                 </div>
               </div>
-              <button onClick={handleLogout} className="w-10 h-10 bg-slate-800/80 rounded-full flex items-center justify-center text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition border border-slate-700">
+              <button onClick={handleLogout} className={`w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white/70 hover:bg-rose-500/40 hover:text-white transition border ${isAleyna ? 'border-pink-500/50' : 'border-slate-600'}`}>
                 <i className="fa-solid fa-arrow-right-from-bracket"></i>
               </button>
             </div>
 
             {/* LIVE MARKET TICKER */}
             <div className="relative z-10 flex gap-3 overflow-x-auto hide-scrollbar pb-2 snap-x">
-                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
-                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-dollar-sign mr-1"></i> USD/TRY</p>
+                <div className="snap-start shrink-0 bg-white/10 backdrop-blur border border-white/10 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-white/60 text-[10px] font-bold uppercase"><i className="fa-solid fa-dollar-sign mr-1"></i> USD/TRY</p>
                     <p className="text-white font-black mt-1">{marketData.usd ? marketData.usd.toFixed(2) : '...'}</p>
                 </div>
-                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
-                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-euro-sign mr-1"></i> EUR/TRY</p>
+                <div className="snap-start shrink-0 bg-white/10 backdrop-blur border border-white/10 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-white/60 text-[10px] font-bold uppercase"><i className="fa-solid fa-euro-sign mr-1"></i> EUR/TRY</p>
                     <p className="text-white font-black mt-1">{marketData.eur ? marketData.eur.toFixed(2) : '...'}</p>
                 </div>
-                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
-                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-coins mr-1"></i> G. Altın</p>
-                    <p className="text-amber-400 font-black mt-1">{marketData.gold ? marketData.gold.toFixed(2) : '...'}</p>
-                </div>
-                <div className="snap-start shrink-0 bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-xl p-3 min-w-[120px]">
-                    <p className="text-slate-400 text-[10px] font-bold uppercase"><i className="fa-solid fa-building-columns mr-1"></i> TCMB Faiz</p>
-                    <p className="text-emerald-400 font-black mt-1">%{marketData.interest}</p>
+                <div className="snap-start shrink-0 bg-white/10 backdrop-blur border border-white/10 rounded-xl p-3 min-w-[120px]">
+                    <p className="text-white/60 text-[10px] font-bold uppercase"><i className="fa-solid fa-coins mr-1"></i> G. Altın</p>
+                    <p className="text-amber-300 font-black mt-1">{marketData.gold ? marketData.gold.toFixed(2) : '...'}</p>
                 </div>
             </div>
           </header>
 
           {/* NAVIGATION */}
           <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 z-40 md:sticky md:top-0 md:border-t-0 md:border-b md:bg-white/90 md:backdrop-blur-md pb-safe">
-            <div className="max-w-md md:max-w-5xl mx-auto flex justify-around md:justify-start px-2 py-3 md:py-4 gap-2">
-              <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'dashboard' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}>
-                <i className="fa-solid fa-layer-group text-xl md:text-lg"></i>
+            <div className="max-w-md md:max-w-5xl mx-auto flex justify-around md:justify-start px-2 py-3 md:py-4 gap-2 relative">
+              
+              <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'dashboard' ? (isAleyna ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className={`${isAleyna && activeTab === 'dashboard' ? 'fa-solid fa-heart' : 'fa-solid fa-layer-group'} text-xl md:text-lg ${isAleyna && activeTab === 'dashboard' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Özet</span>
               </button>
-              <button onClick={() => setActiveTab('add')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'add' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}>
-                <i className="fa-solid fa-circle-plus text-xl md:text-lg"></i>
+              
+              <button onClick={() => setActiveTab('add')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'add' ? (isAleyna ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className={`${isAleyna && activeTab === 'add' ? 'fa-solid fa-paw' : 'fa-solid fa-circle-plus'} text-xl md:text-lg ${isAleyna && activeTab === 'add' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Kayıt Gir</span>
               </button>
-              <button onClick={() => setActiveTab('history')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'history' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'}`}>
-                <i className="fa-solid fa-clock-rotate-left text-xl md:text-lg"></i>
+              
+              <button onClick={() => setActiveTab('history')} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 w-full md:w-auto px-4 py-2 rounded-2xl transition ${activeTab === 'history' ? (isAleyna ? 'text-pink-600 bg-pink-50' : 'text-indigo-600 bg-indigo-50') : 'text-slate-400 hover:bg-slate-50'}`}>
+                <i className={`${isAleyna && activeTab === 'history' ? 'fa-solid fa-cat' : 'fa-solid fa-clock-rotate-left'} text-xl md:text-lg ${isAleyna && activeTab === 'history' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Geçmiş</span>
               </button>
+              
             </div>
           </nav>
 
           {/* MAIN CONTENT AREA */}
-          <main className="p-4 md:p-6 space-y-6">
+          <main className="p-4 md:p-6 space-y-6 relative z-10">
             
             {/* --- DASHBOARD TAB --- */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6 pb-6 animate-fade-in">
                 {!stats ? (
-                  <div className="bg-white p-10 text-center rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center">
-                    <div className="w-24 h-24 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner">
-                      <i className="fa-solid fa-vault"></i>
+                  <div className={`bg-white p-10 text-center rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} flex flex-col items-center relative overflow-hidden`}>
+                    {isAleyna && <span className="absolute top-4 right-4 text-3xl opacity-20">🐾</span>}
+                    <div className={`w-24 h-24 ${isAleyna ? 'bg-pink-50 text-pink-400' : 'bg-slate-50 text-slate-300'} rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner`}>
+                      <i className={`fa-solid ${isAleyna ? 'fa-cat' : 'fa-vault'}`}></i>
                     </div>
                     <h3 className="text-2xl font-black text-slate-800 tracking-tight">Portföyünüz Boş</h3>
                     <p className="text-slate-500 mt-2 font-medium">Büyük yolculuklar tek bir adımla başlar. İlk aylık ve haftalık yatırımınızı girerek serüveni başlatın.</p>
-                    <button onClick={() => setActiveTab('add')} className="mt-8 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-xl shadow-indigo-600/30 active:scale-95">İlk Kaydı Oluştur</button>
+                    <button onClick={() => setActiveTab('add')} className={`mt-8 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'} cute-bounce text-white px-8 py-4 rounded-2xl font-bold transition shadow-xl active:scale-95 flex items-center gap-2`}>
+                      İlk Kaydı Oluştur {isAleyna && <span>✨</span>}
+                    </button>
                   </div>
                 ) : (
                   <>
                     {/* TOTAL BALANCE CARD */}
-                    <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-900 rounded-[2rem] p-6 md:p-8 shadow-2xl shadow-indigo-900/20 text-white relative overflow-hidden">
-                      <i className="fa-solid fa-wallet absolute -right-6 -bottom-6 text-[150px] text-white/5 transform -rotate-12"></i>
+                    <div className={`bg-gradient-to-br ${isAleyna ? 'from-rose-500 via-pink-600 to-purple-600 shadow-pink-600/30' : 'from-indigo-900 via-slate-900 to-slate-900 shadow-indigo-900/20'} rounded-[2rem] p-6 md:p-8 shadow-2xl text-white relative overflow-hidden transition-colors duration-1000`}>
+                      <i className={`fa-solid ${isAleyna ? 'fa-heart' : 'fa-wallet'} absolute -right-6 -bottom-6 text-[150px] text-white/10 transform -rotate-12`}></i>
                       
                       <div className="flex justify-between items-start relative z-10">
                         <div>
-                          <p className="text-indigo-200 text-sm font-bold tracking-widest uppercase mb-1">Toplam Net Varlık</p>
+                          <p className={`${isAleyna ? 'text-pink-100' : 'text-indigo-200'} text-sm font-bold tracking-widest uppercase mb-1 flex items-center gap-2`}>
+                            Toplam Net Varlık {isAleyna && <span className="cute-float text-lg">🌸</span>}
+                          </p>
                           <h2 className="text-4xl md:text-5xl font-black tracking-tighter">{formatCurrency(stats.totalCurrent)}</h2>
                         </div>
                       </div>
                       
-                      <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 gap-4 relative z-10">
+                      <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-2 gap-4 relative z-10">
                         <div>
-                          <p className="text-slate-400 text-xs font-bold uppercase mb-1">Toplam Yatırılan</p>
+                          <p className="text-white/60 text-xs font-bold uppercase mb-1">Toplam Yatırılan</p>
                           <p className="text-xl font-bold">{formatCurrency(stats.totalInvested)}</p>
                         </div>
                         <div>
-                          <p className="text-slate-400 text-xs font-bold uppercase mb-1">Net Kâr / Zarar</p>
-                          <p className={`text-xl font-bold flex items-center gap-1 ${stats.totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            <i className={`fa-solid ${stats.totalProfit >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'} text-sm`}></i>
+                          <p className="text-white/60 text-xs font-bold uppercase mb-1">Net Kâr / Zarar</p>
+                          <p className={`text-xl font-bold flex items-center gap-1 text-white`}>
+                            <i className={`fa-solid ${stats.totalProfit >= 0 ? 'fa-arrow-trend-up text-emerald-300' : 'fa-arrow-trend-down text-rose-300'} text-sm`}></i>
                             {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
                           </p>
                         </div>
@@ -679,7 +737,7 @@
                     {/* ASSET ALLOCATION WIDGET */}
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                         <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
-                            <i className="fa-solid fa-chart-pie text-indigo-500"></i> Varlık Dağılımı
+                            <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Varlık Dağılımı
                         </h3>
                         
                         <div className="flex h-4 rounded-full overflow-hidden mb-5 bg-slate-100">
@@ -712,12 +770,12 @@
                     {/* SMART REPORTS */}
                     <div>
                       <h3 className="text-lg font-extrabold text-slate-800 mb-4 px-1 flex items-center gap-2">
-                        <i className="fa-solid fa-bolt text-amber-500"></i> Akıllı Raporlar
+                        <i className={`fa-solid fa-bolt ${isAleyna ? 'text-pink-500' : 'text-amber-500'}`}></i> Akıllı Raporlar
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         
-                        <button onClick={() => showReport('growth')} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group">
-                          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <button onClick={() => showReport('growth')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
+                          <div className={`w-12 h-12 ${isAleyna ? 'bg-pink-50 text-pink-500' : 'bg-emerald-50 text-emerald-600'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}>
                             <i className="fa-solid fa-seedling"></i>
                           </div>
                           <div>
@@ -726,8 +784,8 @@
                           </div>
                         </button>
 
-                        <button onClick={() => showReport('allocation')} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group">
-                          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <button onClick={() => showReport('allocation')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
+                          <div className={`w-12 h-12 ${isAleyna ? 'bg-purple-50 text-purple-500' : 'bg-indigo-50 text-indigo-600'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}>
                             <i className="fa-solid fa-chart-pie"></i>
                           </div>
                           <div>
@@ -736,8 +794,8 @@
                           </div>
                         </button>
 
-                        <button onClick={() => showReport('inflation')} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group">
-                          <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <button onClick={() => showReport('inflation')} className={`bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition text-left group ${isAleyna ? 'hover:border-pink-200' : ''}`}>
+                          <div className={`w-12 h-12 ${isAleyna ? 'bg-rose-50 text-rose-500' : 'bg-amber-50 text-amber-500'} rounded-2xl flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}>
                             <i className="fa-solid fa-shield-halved"></i>
                           </div>
                           <div>
@@ -755,17 +813,18 @@
 
             {/* --- ADD TAB --- */}
             {activeTab === 'add' && (
-              <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 md:p-8 animate-fade-in">
+              <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 animate-fade-in relative`}>
+                {isAleyna && <span className="absolute top-8 right-8 text-3xl opacity-40 cute-float">🐱</span>}
                 <div className="mb-8">
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">Kayıt Oluştur</h2>
                     <p className="text-slate-500 text-sm mt-1 font-medium">Bu hafta yatırımlarınız nasıl şekillendi? (Sadece değişen veya yeni olanları doldurabilirsiniz)</p>
                 </div>
 
-                <form onSubmit={handleSaveEntry} className="space-y-8">
+                <form onSubmit={handleSaveEntry} className="space-y-8 relative z-10">
                   
                   <div className="space-y-2">
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Değerlendirme Tarihi</label>
-                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition font-bold text-slate-700" />
+                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={`w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 outline-none transition font-bold text-slate-700 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
                   </div>
 
                   <div className="space-y-4">
@@ -817,7 +876,7 @@
                           <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
                             <i className="fa-solid fa-arrow-trend-up text-rose-500"></i> Hisse Senetleri
                           </h3>
-                          <button type="button" onClick={handleAddStock} className="text-xs bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold active:scale-95 transition"><i className="fa-solid fa-plus"></i> Yeni Ekle</button>
+                          <button type="button" onClick={handleAddStock} className="cute-bounce text-xs bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold transition"><i className="fa-solid fa-plus"></i> Yeni Ekle</button>
                         </div>
                         
                         {stocks.length === 0 && <p className="text-xs font-medium text-slate-400 italic">Şu an takip edilen hisse senedi yok.</p>}
@@ -842,9 +901,9 @@
 
                   </div>
 
-                  <button type="submit" disabled={isSaving} className={`w-full text-white font-bold py-5 rounded-2xl shadow-xl transition active:scale-95 text-lg flex justify-center items-center gap-2 ${isSaving ? 'bg-indigo-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800'}`}>
-                    {isSaving ? <i className="fa-solid fa-spinner fa-spin text-xl"></i> : <i className="fa-solid fa-cloud-arrow-up"></i>}
-                    {isSaving ? 'Buluta Eşitleniyor...' : 'Verileri Güvenli Şekilde Kaydet'}
+                  <button type="submit" disabled={isSaving} className={`w-full cute-bounce text-white font-bold py-5 rounded-2xl shadow-xl transition text-lg flex justify-center items-center gap-2 ${isSaving ? 'bg-slate-400 cursor-not-allowed' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-slate-900 hover:bg-slate-800')}`}>
+                    {isSaving ? <i className="fa-solid fa-spinner fa-spin text-xl"></i> : (isAleyna ? <span className="text-xl">🐾</span> : <i className="fa-solid fa-cloud-arrow-up"></i>)}
+                    {isSaving ? 'Buluta Eşitleniyor...' : (isAleyna ? 'Kaydet Güzelim 💖' : 'Verileri Güvenli Şekilde Kaydet')}
                   </button>
                 </form>
               </div>
@@ -852,22 +911,22 @@
 
             {/* --- HISTORY TAB --- */}
             {activeTab === 'history' && (
-              <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-4 md:p-8 animate-fade-in">
+              <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-4 md:p-8 animate-fade-in`}>
                 <h2 className="text-2xl font-black text-slate-900 mb-6 px-1 flex items-center gap-2">
-                  <i className="fa-solid fa-clock-rotate-left text-indigo-500"></i> Geçmiş Dönemler
+                  <i className={`fa-solid fa-clock-rotate-left ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Geçmiş Dönemler
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-4 relative z-10">
                   {sortedEntries.map((entry) => {
                     const totalI = (entry.mmfInvested||0) + (entry.goldInvested||0) + (entry.fxInvested||0) + (entry.stocks||[]).reduce((s, x) => s + (x.invested||0), 0);
                     const totalC = (entry.mmfCurrent||0) + (entry.goldCurrent||0) + (entry.fxCurrent||0) + (entry.stocks||[]).reduce((s, x) => s + (x.current||0), 0);
                     const profit = totalC - totalI;
                     
                     return (
-                      <div key={entry.id} className="bg-slate-50 border border-slate-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-indigo-300 transition">
+                      <div key={entry.id} className={`bg-slate-50 border border-slate-200 p-4 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 transition hover:border-${isAleyna ? 'pink-300' : 'indigo-300'}`}>
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm border border-slate-100 shrink-0">
+                          <div className={`w-14 h-14 bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm border border-slate-100 shrink-0 ${isAleyna ? 'text-pink-600' : 'text-indigo-600'}`}>
                             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{new Date(entry.date).toLocaleDateString('tr-TR', {month:'short'})}</span>
-                            <span className="text-xl font-black text-indigo-600 leading-none mt-0.5">{new Date(entry.date).getDate()}</span>
+                            <span className="text-xl font-black leading-none mt-0.5">{new Date(entry.date).getDate()}</span>
                           </div>
                           <div>
                             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Toplam Portföy</p>
@@ -881,7 +940,7 @@
                                 {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
                               </p>
                           </div>
-                          <button onClick={() => handleDeleteEntry(entry.id)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-rose-500 border border-slate-200 shadow-sm hover:bg-rose-50 active:scale-90 transition ml-2">
+                          <button onClick={() => handleDeleteEntry(entry.id)} className="cute-bounce w-10 h-10 flex items-center justify-center rounded-xl bg-white text-rose-500 border border-slate-200 shadow-sm hover:bg-rose-50 transition ml-2">
                             <i className="fa-solid fa-trash-can"></i>
                           </button>
                         </div>

@@ -11,11 +11,11 @@
   <!-- FontAwesome İkonları -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <!-- React, ReactDOM ve Recharts (Grafikler İçin - Sabit Sürüm!) -->
+  <!-- React, ReactDOM ve Recharts (Grafikler İçin Çökmez Sürümler) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.1.12/umd/Recharts.min.js"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
 
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -28,29 +28,29 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* Romantik ve Temel Animasyonlar */
+    /* Animasyonlar */
     @keyframes floatUp { 0% { transform: translateY(110vh) rotate(0deg) scale(0.8); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-20vh) rotate(360deg) scale(1.2); opacity: 0; } }
     .flower-anim { position: fixed; bottom: -100px; animation: floatUp ease-in forwards; z-index: 101; pointer-events: none; }
-    
+
     @keyframes flutter { 0% { transform: translateY(110vh) translateX(0) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 50% { transform: translateY(30vh) translateX(100px) rotate(15deg); } 90% { opacity: 1; } 100% { transform: translateY(-20vh) translateX(-100px) rotate(-15deg); opacity: 0; } }
     .butterfly { position: fixed; bottom: -50px; animation: flutter ease-in-out forwards; z-index: 102; pointer-events: none; }
-    
+
     @keyframes heartPulse { 0%, 100% { transform: scale(1) rotate(12deg); } 50% { transform: scale(1.1) rotate(12deg); } }
     .heart-pulse { animation: heartPulse 2.5s infinite ease-in-out; }
-    
+
     .slide-fade { animation: slideFade 4s ease-in-out forwards; }
     @keyframes slideFade { 0% { opacity: 0; transform: scale(0.85) translateY(30px); filter: blur(5px); } 15% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } 85% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } 100% { opacity: 0; transform: scale(1.1) translateY(-20px); filter: blur(5px); } }
-    
+
     @keyframes fadeOutScreen { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; visibility: hidden; pointer-events: none; } }
     .romantic-screen { animation: fadeOutScreen 17s forwards; }
-    
+
     @keyframes float-gentle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     .cute-bounce:active { transform: scale(0.92); }
     .cute-float { animation: float-gentle 3s ease-in-out infinite; }
-    
+
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .toast-animate { animation: slideUp 0.3s ease-out forwards; }
-    
+
     .line-through-anim { text-decoration: line-through; color: #94a3b8; transition: all 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -105,8 +105,7 @@
 
   <!-- REACT UYGULAMASI -->
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
-    const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, BarChart, Bar, Legend } = window.Recharts || {};
+    const { useState, useEffect, useMemo, useRef } = React;
 
     const ALLOWED_EMAILS = ['alikaya4275@gmail.com', 'aleynaerdn2294@gmail.com'];
     const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Yol/Ulaşım', 'Ev/Çeyiz', 'Diğer'];
@@ -130,7 +129,7 @@
         return Number(String(val).replace(/\./g, '').replace(',', '.')) || 0;
     };
 
-    // --- CURRENCY INPUT BİLEŞENİ ---
+    // --- BİLEŞENLER ---
     const CurrencyInput = ({ value, onChange, placeholder, className, isAleyna, icon = "₺" }) => {
         const formatVal = (val) => {
             if (val === undefined || val === null || val === '') return '';
@@ -161,7 +160,6 @@
         );
     };
 
-    // --- BİLEŞENLER ---
     const CuteAnimals = ({ isAleyna }) => (
         <>
           {!isAleyna && <div className="animal-bl">🦕</div>}
@@ -192,6 +190,62 @@
           </div>
         </div>
       );
+    };
+
+    // --- YENİ EKLENEN ONBOARDING (TUR) BİLEŞENİ ---
+    const TourGuide = ({ steps, currentStep, onNext, onSkip, isAleyna }) => {
+        const [targetStyle, setTargetStyle] = useState({});
+
+        useEffect(() => {
+            const updatePosition = () => {
+                const el = document.getElementById(steps[currentStep].target);
+                if(el) {
+                    const rect = el.getBoundingClientRect();
+                    setTargetStyle({
+                        top: rect.top - 8, left: rect.left - 8,
+                        width: rect.width + 16, height: rect.height + 16, bottom: rect.bottom
+                    });
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                }
+            };
+            
+            updatePosition();
+            const timeout = setTimeout(updatePosition, 300);
+            window.addEventListener('resize', updatePosition);
+            return () => { clearTimeout(timeout); window.removeEventListener('resize', updatePosition); };
+        }, [currentStep, steps]);
+
+        if(!targetStyle.width) return null;
+
+        const tooltipTop = targetStyle.bottom > window.innerHeight - 250 ? targetStyle.top - 180 : targetStyle.bottom + 20;
+
+        return (
+            <div className="fixed inset-0 z-[999] pointer-events-auto overflow-hidden animate-fade-in">
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[1px] transition-opacity"></div>
+                <div 
+                    className={`absolute border-2 border-white rounded-2xl shadow-[0_0_0_9999px_rgba(15,23,42,0.6)] transition-all duration-500`}
+                    style={{ top: targetStyle.top, left: targetStyle.left, width: targetStyle.width, height: targetStyle.height }}
+                ></div>
+                <div 
+                    className={`absolute bg-white p-5 rounded-2xl shadow-2xl w-[90%] max-w-[320px] transition-all duration-500`}
+                    style={{ top: tooltipTop, left: Math.max(10, Math.min(targetStyle.left - 20, window.innerWidth - 330)) }}
+                >
+                    <h3 className={`text-base font-black mb-2 ${isAleyna ? 'text-pink-600' : 'text-indigo-600'}`}>
+                        <i className={`fa-solid ${steps[currentStep].icon} mr-2`}></i>{steps[currentStep].title}
+                    </h3>
+                    <p className="text-xs text-slate-600 font-medium mb-4 leading-relaxed">{steps[currentStep].content}</p>
+                    <div className="flex justify-between items-center border-t border-slate-100 pt-3">
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{currentStep + 1} / {steps.length}</span>
+                        <div className="flex gap-3 items-center">
+                            <button onClick={onSkip} className="text-xs text-slate-400 font-bold hover:text-slate-600 transition">Geç</button>
+                            <button onClick={onNext} className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-lg transition cute-bounce ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'}`}>
+                                {currentStep < steps.length - 1 ? 'İleri 👉' : 'Turu Bitir ✨'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const ReportModal = ({ isOpen, onClose, title, icon, content, isAleyna }) => {
@@ -246,7 +300,7 @@
 
       if (!isOpen) return null;
 
-    const slides = [
+  const slides = [
         "Hoşgeldin gülüm 🌸",
         "Seni sevdiğimi söylemiş miydim ☀️",
         "İyi ki varsın gülüm 🐱💖",
@@ -280,6 +334,9 @@
       const [loading, setLoading] = useState(true);
       const [isSavingAction, setIsSavingAction] = useState(false);
       
+      // LAZY LOADING İÇİN CHARTS STATE'İ (Error #300 Çözümü)
+      const [chartsLoaded, setChartsLoaded] = useState(false);
+
       // Veritabanı State'leri
       const [entries, setEntries] = useState([]);
       const [salaries, setSalaries] = useState([]);
@@ -290,7 +347,7 @@
       const [debts, setDebts] = useState([]);
       const [subscriptions, setSubscriptions] = useState([]);
       const [wishlist, setWishlist] = useState([]);
-      const [settings, setSettings] = useState({ engagementDate: '', marriageDate: '', targetAmount: '' });
+      const [settings, setSettings] = useState({ engagementDate: '', marriageDate: '', targetAmount: '', tourCompleted: false });
 
       const [activeTab, setActiveTab] = useState('dashboard');
       const [toast, setToast] = useState(null);
@@ -298,6 +355,7 @@
 
       const [showRomanticGreeting, setShowRomanticGreeting] = useState(false);
       const [hasGreeted, setHasGreeted] = useState(false);
+      const [tourStep, setTourStep] = useState(-1); // -1 = Kapalı
       
       const [quote] = useState(() => MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
       const [marketData, setMarketData] = useState({ usd: null, eur: null, gold: null, interest: 50.0 });
@@ -342,6 +400,17 @@
       const themeHex = isAleyna ? '#ec4899' : '#6366f1';
 
       const showToast = (message, type = 'success') => setToast({ message, type });
+
+      // GRAFİK MOTORU (RECHARTS) YÜKLEME KONTROLÜ
+      useEffect(() => {
+        const checkRecharts = setInterval(() => {
+            if(window.Recharts && window.Recharts.PieChart) {
+                setChartsLoaded(true);
+                clearInterval(checkRecharts);
+            }
+        }, 100);
+        return () => clearInterval(checkRecharts);
+      }, []);
 
       useEffect(() => {
         const handleReady = () => setIsFirebaseReady(true);
@@ -414,6 +483,11 @@
           if(s) {
               setSettings(s); setEngDateInput(s.engagementDate || ''); setMarDateInput(s.marriageDate || '');
               setTargetAmountInput(s.targetAmount ? String(s.targetAmount).replace('.', ',') : '');
+              if(!s.tourCompleted && tourStep === -1) {
+                  setTimeout(() => setTourStep(0), 1000); // Tour starts automatically
+              }
+          } else {
+              if(tourStep === -1) setTimeout(() => setTourStep(0), 1000);
           }
           
           setLoading(false);
@@ -469,6 +543,13 @@
               totalExpenseAmount += (ex.amount * mult);
           });
           
+          const expenseCategoryData = Object.entries(
+              currentExpenses.reduce((acc, ex) => { 
+                  let mult = 1; if(ex.frequency === 'daily') mult = daysSinceSal; else if(ex.frequency === 'weekly') mult = weeksSinceSal;
+                  acc[ex.category || 'Diğer'] = (acc[ex.category || 'Diğer'] || 0) + (ex.amount * mult); return acc; 
+              }, {})
+          ).map(([name, value]) => ({ name, value }));
+
           const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totalInstallments || 0));
           const activeCards = debts.filter(d => d.debtType === 'card' && d.totalAmount > 0);
           const totalDebtPayments = [...activeLoans, ...activeCards].reduce((sum, d) => sum + (d.monthlyPayment || 0), 0);
@@ -481,7 +562,7 @@
           const budgetChartData = [
               { name: 'Kalan Nakit', value: Math.max(0, remainingSalary), color: '#10b981' },
               { name: 'Sabit Yük (Borç+Abonelik)', value: totalFixedExpenses, color: '#f59e0b' },
-              { name: 'Değişken Harcamalar', value: totalExpenseAmount, color: '#ec4899' }
+              { name: 'Harcamalar', value: totalExpenseAmount, color: '#ec4899' }
           ].filter(d => d.value > 0);
 
           const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
@@ -501,7 +582,7 @@
               investedPercent = (newlyInvested / coreSalary) * 100;
           }
 
-          return { latestSalary, coreSalary, currentExpenses, totalExpenseAmount, totalFixedExpenses, remainingSalary, dailyBudget, newlyInvested, investedPercent, totalDebtPayments, totalSubPayments, budgetChartData };
+          return { latestSalary, coreSalary, currentExpenses, totalExpenseAmount, totalFixedExpenses, remainingSalary, dailyBudget, newlyInvested, investedPercent, totalDebtPayments, totalSubPayments, expenseCategoryData, budgetChartData };
       }, [salaries, expenses, debts, subscriptions, sortedEntries, latestEntry]);
 
       const specialDates = useMemo(() => {
@@ -686,7 +767,7 @@
 
       const handleSaveSettings = async (e) => {
         e.preventDefault(); if(!user) return; setIsSavingAction(true);
-        const payload = { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) };
+        const payload = { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput), tourCompleted: settings.tourCompleted };
         await saveToFirebase('settings', payload, isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları güncellendi.", "Ayar Hatası");
         setIsSavingAction(false);
       };
@@ -769,10 +850,26 @@
           setIsSavingAction(false);
       };
 
-      const handleUpdateDocField = async (id, field, value, successMsg) => {
+      // --- TUR BİTİRME (ONBOARDING) ---
+      const handleTourComplete = async () => {
+          setTourStep(-1);
           if(!user) return;
-          try { const { db, doc, setDoc } = window.firebaseApp; await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { [field]: value }, { merge: true }); showToast(successMsg || "Güncellendi."); } catch (error) { showToast("Güncellenemedi.", "error"); }
+          try {
+              const { db, doc, setDoc } = window.firebaseApp;
+              await setDoc(doc(db, 'portfoy_kayitlari_v2', 'settings'), { tourCompleted: true }, { merge: true });
+          } catch(e) {}
       };
+
+      const tourStepsData = [
+          { target: 'nav-dashboard', icon: 'fa-chart-line', title: 'Hoş Geldiniz!', content: 'Burası kontrol merkeziniz. Finansal özetinizi, hayat planlarınızı ve grafiklerinizi bu ekrandan takip edebilirsiniz.' },
+          { target: 'nav-budget', icon: 'fa-wallet', title: 'Bütçe & Maaş', content: 'Her ay aldığınız maaşı buraya girin. Krediler ve abonelikler bu maaştan otomatik düşülerek size "Günlük Kalan Harcama" limitinizi hesaplar.' },
+          { target: 'nav-debts', icon: 'fa-credit-card', title: 'Borç Yönetimi', content: 'Kredi kartı ve taksitli kredi borçlarınızı buraya kaydedin. Maaştan otomatik kesilecek Sabit Giderlerinizi buradan yönetirsiniz.' },
+          { target: 'nav-wishlist', icon: 'fa-star', title: 'Dileklerimiz', content: 'Beraber almak istediğiniz arabayı, tatili veya teknolojik aletleri öncelik sırasına göre buraya yazıp hedefleyebilirsiniz.' },
+          { target: 'nav-houses', icon: 'fa-house', title: 'Ev Endeksi', content: 'Taşınmayı düşündüğünüz evlerin linkini, kirasını ve puanını buraya girin. Sistem size en uygun fiyat/performans evlerini kıyaslayarak sunar.' },
+          { target: 'nav-dowry', icon: 'fa-ring', title: 'Çeyiz & Eşya', content: 'Evlilik ve yeni hayat için gereken her çeyiz eşyasını adet ve fiyatlarıyla kaydedin. Alınanları tikleyerek çeyiz bütçesi tablosunu oluşturun.' },
+          { target: 'nav-media', icon: 'fa-film', title: 'Kültür & Sanat', content: 'Beraber izlenecek filmleri, dizileri veya oynanacak oyunları kaydedin. "Akşam ne izlesek?" derdi sonsuza dek bitiyor!' },
+          { target: 'nav-add', icon: 'fa-circle-plus', title: 'Portföy Yönetimi', content: 'Aylık yatırımlarınızı (Altın, Fon, Döviz, Hisse) bu sekmeden sisteme girip, Dashboard\'daki "Uzun Vadeli Büyüme" grafiklerini canlandırın.' }
+      ];
 
       if (!loading && !user) {
         return (
@@ -818,6 +915,7 @@
           
           <CuteAnimals isAleyna={isAleyna} />
           {isAleyna && <AleynaThemeEffects />}
+          {tourStep >= 0 && <TourGuide steps={tourStepsData} currentStep={tourStep} isAleyna={isAleyna} onNext={() => { if(tourStep < tourStepsData.length-1) setTourStep(prev=>prev+1); else handleTourComplete(); }} onSkip={handleTourComplete} />}
 
           {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
           <ReportModal isOpen={selectedReport !== null} onClose={() => setSelectedReport(null)} {...selectedReport} isAleyna={isAleyna} />
@@ -870,38 +968,37 @@
             </div>
           </header>
 
-          {/* MENÜ BAR */}
           <nav className="fixed bottom-0 left-0 w-full bg-white/95 border-t border-slate-100 z-40 md:sticky md:top-0 md:border-t-0 md:border-b md:bg-white/90 backdrop-blur-xl pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none">
             <div className="max-w-md md:max-w-5xl mx-auto flex px-2 py-3 md:py-4 gap-1 relative overflow-x-auto hide-scrollbar whitespace-nowrap snap-x">
-              <button onClick={() => setActiveTab('dashboard')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'dashboard' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-dashboard" onClick={() => setActiveTab('dashboard')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'dashboard' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`${isAleyna && activeTab === 'dashboard' ? 'fa-solid fa-heart' : 'fa-solid fa-chart-line'} text-xl md:text-lg ${isAleyna && activeTab === 'dashboard' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Özet(Dash)</span>
               </button>
-              <button onClick={() => setActiveTab('budget')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'budget' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-budget" onClick={() => setActiveTab('budget')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'budget' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-wallet text-xl md:text-lg ${isAleyna && activeTab === 'budget' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Bütçe & Nakit</span>
               </button>
-              <button onClick={() => setActiveTab('debts')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'debts' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-debts" onClick={() => setActiveTab('debts')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'debts' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-credit-card text-xl md:text-lg ${isAleyna && activeTab === 'debts' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">{isAleyna ? 'Taksitler 💸' : 'Borçlar'}</span>
               </button>
-              <button onClick={() => setActiveTab('wishlist')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'wishlist' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-wishlist" onClick={() => setActiveTab('wishlist')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'wishlist' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-star text-xl md:text-lg ${isAleyna && activeTab === 'wishlist' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Dileklerimiz</span>
               </button>
-              <button onClick={() => setActiveTab('houses')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'houses' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-houses" onClick={() => setActiveTab('houses')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'houses' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-house text-xl md:text-lg ${isAleyna && activeTab === 'houses' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">{isAleyna ? 'Evimiz' : 'Ev Adayları'}</span>
               </button>
-              <button onClick={() => setActiveTab('dowry')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'dowry' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-dowry" onClick={() => setActiveTab('dowry')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'dowry' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-ring text-xl md:text-lg ${isAleyna && activeTab === 'dowry' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">{isAleyna ? 'Çeyizimiz💖' : 'Çeyiz/Eşya'}</span>
               </button>
-              <button onClick={() => setActiveTab('media')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'media' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-media" onClick={() => setActiveTab('media')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'media' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`fa-solid fa-film text-xl md:text-lg ${isAleyna && activeTab === 'media' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Kültür Sanat</span>
               </button>
-              <button onClick={() => setActiveTab('add')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'add' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
+              <button id="nav-add" onClick={() => setActiveTab('add')} className={`snap-start shrink-0 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-2xl transition nav-item ${activeTab === 'add' ? (isAleyna ? 'text-pink-600 bg-pink-50 active' : 'text-indigo-600 bg-indigo-50 active') : 'text-slate-400 hover:bg-slate-50'}`}>
                 <i className={`${isAleyna && activeTab === 'add' ? 'fa-solid fa-paw' : 'fa-solid fa-circle-plus'} text-xl md:text-lg ${isAleyna && activeTab === 'add' ? 'cute-float' : ''}`}></i>
                 <span className="text-[10px] md:text-sm font-bold">Portföy Gir</span>
               </button>
@@ -1020,24 +1117,22 @@
                     {/* Bütçe Pasta Grafiği */}
                     <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col min-h-[250px]`}>
                         <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                            <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Bütçe Dağılımı
+                            <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Net Maaş Dağılımı
                         </h3>
-                        {budgetStats?.budgetChartData && budgetStats.budgetChartData.length > 0 ? (
-                            window.Recharts ? (
-                                <div className="flex-1 w-full mt-2 min-h-[180px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={budgetStats.budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={2}>
-                                                {budgetStats.budgetChartData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                            <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            ) : (<p className="text-xs text-rose-500 mt-4 text-center">Grafik motoru yükleniyor...</p>)
+                        {chartsLoaded && budgetStats?.budgetChartData && budgetStats.budgetChartData.some(d => d.value > 0) ? (
+                            <div className="flex-1 w-full mt-2">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={budgetStats.budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={2}>
+                                            {budgetStats.budgetChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
+                                        <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         ) : (
                             <EmptyChart icon="fa-chart-pie" text="Maaş veya Harcama Verisi Yok" isAleyna={isAleyna} />
                         )}
@@ -1048,21 +1143,19 @@
                         <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
                             <i className={`fa-solid fa-star ${isAleyna ? 'text-pink-500' : 'text-amber-400'}`}></i> Dileklerimiz
                         </h3>
-                        {wishlist.length > 0 ? (
-                            window.Recharts ? (
-                                <div className="flex-1 w-full mt-2 min-h-[180px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={wishlistStatsData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={2}>
-                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
-                                                <Cell fill="#e2e8f0" />
-                                            </Pie>
-                                            <Tooltip contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                            <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            ) : (<p className="text-xs text-rose-500 mt-4 text-center">Grafik motoru yükleniyor...</p>)
+                        {chartsLoaded && wishlistStatsData.some(w => w.value > 0) ? (
+                            <div className="flex-1 w-full mt-2">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={wishlistStatsData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={2}>
+                                            <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
+                                            <Cell fill="#e2e8f0" />
+                                        </Pie>
+                                        <Tooltip contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
+                                        <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         ) : (
                             <EmptyChart icon="fa-wand-magic-sparkles" text="Dilek Listesi Boş" isAleyna={isAleyna} />
                         )}
@@ -1076,26 +1169,24 @@
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
                             <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Bütçesi
                         </h3>
-                        {dowryItems.length > 0 ? (
-                            window.Recharts ? (
-                                <>
-                                    <div className="h-32 w-full relative z-10">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2}>
-                                                    <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
-                                                    <Cell fill="#e2e8f0" />
-                                                </Pie>
-                                                <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <div className="flex justify-between text-[11px] font-bold px-1 relative z-10 mt-2">
-                                        <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
-                                        <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
-                                    </div>
-                                </>
-                            ) : (<p className="text-xs text-rose-500 text-center">Yükleniyor...</p>)
+                        {chartsLoaded && (dowrySpent > 0 || dowryPending > 0) ? (
+                            <>
+                                <div className="h-32 w-full relative z-10">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2}>
+                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
+                                                <Cell fill="#e2e8f0" />
+                                            </Pie>
+                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex justify-between text-[11px] font-bold px-1 relative z-10 mt-2">
+                                    <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
+                                    <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
+                                </div>
+                            </>
                         ) : (
                             <EmptyChart icon="fa-box-open" text="Çeyiz Listesi Boş" isAleyna={isAleyna} />
                         )}
@@ -1106,23 +1197,21 @@
                         <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
                             <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kiralık Ev Endeksi
                         </h3>
-                        {houses.length > 0 ? (
-                            window.Recharts ? (
-                                <div className="h-40 w-full relative z-10 mt-2">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={houseChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
-                                            <Tooltip 
-                                                formatter={(val, name) => [name === 'Fiyat' ? formatCurrency(val) : val, name]} 
-                                                cursor={{fill: '#f8fafc'}} 
-                                                contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                                            />
-                                            <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} barSize={30} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            ) : (<p className="text-xs text-rose-500 text-center">Yükleniyor...</p>)
+                        {chartsLoaded && houseChartData.length > 0 ? (
+                            <div className="h-40 w-full relative z-10 mt-2">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={houseChartData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
+                                        <Tooltip 
+                                            formatter={(val, name) => [name === 'Fiyat' ? formatCurrency(val) : val, name]} 
+                                            cursor={{fill: '#f8fafc'}} 
+                                            contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                                        />
+                                        <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} barSize={30} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         ) : (
                             <EmptyChart icon="fa-house-chimney-window" text="Kayıtlı Ev Bulunamadı" isAleyna={isAleyna} />
                         )}
@@ -1133,21 +1222,19 @@
                         <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
                             <i className={`fa-solid fa-film ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kültür & Sanat İstatistikleri
                         </h3>
-                        {mediaItems.length > 0 ? (
-                            window.Recharts ? (
-                                <div className="h-40 w-full relative z-10 mt-2">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:20, left:-20, bottom:0}}>
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 'bold', fill: '#64748b'}} />
-                                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                                            <Legend iconType="circle" wrapperStyle={{fontSize: '10px', marginTop: '10px'}} />
-                                            <Bar dataKey="Biten" name="Tamamlandı" stackId="a" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 0, 0, 0]} />
-                                            <Bar dataKey="Bekleyen" name="Listede" stackId="a" fill="#e2e8f0" radius={[0, 4, 4, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            ) : (<p className="text-xs text-rose-500 text-center">Yükleniyor...</p>)
+                        {chartsLoaded && mediaStatsData.some(m => m.Biten > 0 || m.Bekleyen > 0) ? (
+                            <div className="h-40 w-full relative z-10 mt-2">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:20, left:-20, bottom:0}}>
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 'bold', fill: '#64748b'}} />
+                                        <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                        <Legend iconType="circle" wrapperStyle={{fontSize: '10px', marginTop: '10px'}} />
+                                        <Bar dataKey="Biten" name="Tamamlandı" stackId="a" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="Bekleyen" name="Listede" stackId="a" fill="#e2e8f0" radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         ) : (
                             <EmptyChart icon="fa-clapperboard" text="Kültür & Sanat Listesi Boş" isAleyna={isAleyna} />
                         )}
@@ -1256,7 +1343,7 @@
                             <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
                                 <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Varlık Dağılımı
                             </h3>
-                            {window.Recharts && assetChartData.length > 0 ? (
+                            {chartsLoaded && assetChartData.length > 0 ? (
                                 <div className="flex-1 w-full mt-2">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
@@ -1290,7 +1377,7 @@
                         <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
                             <i className={`fa-solid fa-chart-area ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Portföy Büyüme Grafiği {isAleyna && <span className="cute-float text-sm">🦋</span>}
                         </h3>
-                        {window.Recharts && chartData.length > 0 ? (
+                        {chartsLoaded && chartData.length > 0 ? (
                             <div className="h-64 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={chartData}>
@@ -1383,7 +1470,7 @@
                           </div>
 
                           <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-4 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isSavingAction ? 'bg-slate-400' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30')}`}>
-                              {isSavingAction ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check"></i>} Bütçeyi Kaydet
+                              {isSavingAction ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check"></i>} Yeni Bütçe Dönemini Başlat
                           </button>
                       </form>
                       
@@ -1736,26 +1823,17 @@
                         </h2>
                         
                         <form onSubmit={handleSaveDowry} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
-                            <div className="flex flex-col md:flex-row gap-3">
-                                <input type="text" required placeholder="Ürün Adı (Örn: Karaca Tencere Seti)" value={dName} onChange={(e) => setDName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
-                                <input type="text" placeholder="Marka (Opsiyonel)" value={dBrand} onChange={(e) => setDBrand(e.target.value)} className={`w-full md:w-48 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                            <input type="text" required placeholder="Ürün Adı (Örn: Karaca Tencere Seti)" value={dName} onChange={(e) => setDName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                            <div className="md:w-48">
+                                <CurrencyInput value={dPrice} onChange={setDPrice} placeholder="Fiyat" isAleyna={isAleyna} />
                             </div>
-                            <div className="flex flex-col md:flex-row gap-3">
-                                <div className="md:w-48">
-                                    <CurrencyInput value={dPrice} onChange={setDPrice} placeholder="Birim Fiyat" isAleyna={isAleyna} />
-                                </div>
-                                <div className="relative md:w-24">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Adet</span>
-                                    <input type="number" min="1" value={dQty} onChange={(e) => setDQty(e.target.value)} className={`w-full pl-12 pr-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
-                                </div>
-                                <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-40 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
-                                    <option value="alinacak">Alınacak</option>
-                                    <option value="alindi">Alındı ✅</option>
-                                </select>
-                                <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
-                                    Ekle
-                                </button>
-                            </div>
+                            <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
+                                <option value="alinacak">Alınacak</option>
+                                <option value="alindi">Alındı ✅</option>
+                            </select>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
+                                Ekle
+                            </button>
                         </form>
 
                         <div className="space-y-6">

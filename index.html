@@ -89,6 +89,8 @@
 
     .nav-item { position: relative; }
     .nav-item.active::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 20px; height: 4px; border-radius: 4px; background-color: currentColor; }
+
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: currentColor; cursor: pointer; }
   </style>
 </head>
 <body class="text-slate-800 font-sans pb-28 md:pb-12 overflow-x-hidden">
@@ -125,7 +127,7 @@
     const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, BarChart, Bar, Legend } = window.Recharts || {};
 
     const ALLOWED_EMAILS = ['alikaya4275@gmail.com', 'aleynaerdn2294@gmail.com'];
-    const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Yol/Ulaşım', 'Diğer'];
+    const EXPENSE_CATEGORIES = ['Market', 'Kira', 'Faturalar', 'Dışarıda Yemek', 'Giyim & Bakım', 'Sağlık', 'Eğlence', 'Yol/Ulaşım', 'Ev/Çeyiz', 'Diğer'];
     const CHART_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b', '#84cc16'];
     const MOTIVATIONAL_QUOTES = [
       "Birlikte kurduğumuz her hayal, gerçeğe dönüşmeyi bekleyen bir tohumdur. 🌱",
@@ -255,11 +257,11 @@
 
       if (!isOpen) return null;
 
-      const slides = [
-        "Dünyanın en güzel nişanlısı gelmiş... 🌸",
-        "Gülüşüyle günüme güneş açtıranım ☀️",
-        "Hoş geldin canımın içi, kedilerin annesi 🐱💖",
-        "Birlikte kuracağımız o güzel geleceğe... 🏡✨"
+    const slides = [
+        "Hoşgeldin gülüm 🌸",
+        "Seni sevdiğimi söylemiş miydim ☀️",
+        "İyi ki varsın gülüm 🐱💖",
+        "Seni her şeyinle seviyorum 💖🏡✨"
       ];
 
       return (
@@ -319,18 +321,29 @@
       const [emergencyFund, setEmergencyFund] = useState(''); const [passiveIncome, setPassiveIncome] = useState(''); 
       const [stocks, setStocks] = useState([]);
 
+      // Portföy Auto Allocator
+      const [autoAllocCap, setAutoAllocCap] = useState('');
+      const [pMmf, setPMmf] = useState(25); const [pGold, setPGold] = useState(25); const [pFx, setPFx] = useState(25); const [pStock, setPStock] = useState(25);
+
       // Form States (Maaş/Bütçe)
+      const [salaryDate, setSalaryDate] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
       const [aliSalary, setAliSalary] = useState(''); const [aleynaSalary, setAleynaSalary] = useState('');
+      const [rolloverSalary, setRolloverSalary] = useState(''); // Devreden Bakiye
       const [aliFood, setAliFood] = useState(''); const [aleynaFood, setAleynaFood] = useState('');
       const [aliTransport, setAliTransport] = useState(''); const [aleynaTransport, setAleynaTransport] = useState('');
+      
       const [expenseName, setExpenseName] = useState(''); const [expenseAmount, setExpenseAmount] = useState('');
       const [expenseCat, setExpenseCat] = useState('Market'); const [expenseOwner, setExpenseOwner] = useState('Ortak');
+      const [expenseFreq, setExpenseFreq] = useState('once'); // YENİ: Harcama Sıklığı
 
       // Form States (Diğerleri)
       const [engDateInput, setEngDateInput] = useState(''); const [marDateInput, setMarDateInput] = useState(''); const [targetAmountInput, setTargetAmountInput] = useState(''); 
       const [hTitle, setHTitle] = useState(''); const [hPrice, setHPrice] = useState(''); const [hLink, setHLink] = useState(''); const [hAddress, setHAddress] = useState(''); const [hRating, setHRating] = useState('3');
-      const [dName, setDName] = useState(''); const [dPrice, setDPrice] = useState(''); const [dStatus, setDStatus] = useState('alinacak');
-      const [mTitle, setMTitle] = useState(''); const [mType, setMType] = useState('film'); const [mStatus, setMStatus] = useState('bekliyor');
+      
+      const [dName, setDName] = useState(''); const [dBrand, setDBrand] = useState(''); const [dPrice, setDPrice] = useState(''); const [dQty, setDQty] = useState('1'); const [dStatus, setDStatus] = useState('alinacak');
+      
+      const [mTitle, setMTitle] = useState(''); const [mType, setMType] = useState('film'); const [mSeries, setMSeries] = useState('1'); const [mStatus, setMStatus] = useState('bekliyor');
+      
       const [dbtName, setDbtName] = useState(''); const [dbtType, setDbtType] = useState('loan'); const [dbtTotal, setDbtTotal] = useState(''); const [dbtMonthly, setDbtMonthly] = useState(''); const [dbtInstallments, setDbtInstallments] = useState(''); const [dbtInterest, setDbtInterest] = useState('');
       const [subName, setSubName] = useState(''); const [subPrice, setSubPrice] = useState('');
       const [wName, setWName] = useState(''); const [wPrice, setWPrice] = useState(''); const [wLink, setWLink] = useState(''); const [wPriority, setWPriority] = useState('2');
@@ -386,7 +399,7 @@
         return () => unsubscribe();
       }, [isFirebaseReady, hasGreeted]);
 
-      // VERİTABANI DİNLEME (Sıralama Bug'ı Çözüldü: ID ve Date kullanılıyor)
+      // VERİTABANI DİNLEME 
       useEffect(() => {
         if (!isFirebaseReady || !user) return;
         const { db, collection, onSnapshot } = window.firebaseApp;
@@ -398,7 +411,7 @@
           const data = snapshot.docs.map(doc => doc.data());
           
           setEntries(data.filter(d => d.type === 'entry'));
-          setSalaries(data.filter(d => d.type === 'salary').sort((a,b) => b.id.localeCompare(a.id)));
+          setSalaries(data.filter(d => d.type === 'salary').sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)));
           setExpenses(data.filter(d => d.type === 'expense').sort((a,b) => b.id.localeCompare(a.id)));
           setDebts(data.filter(d => d.type === 'debt').sort((a,b) => b.id.localeCompare(a.id)));
           setSubscriptions(data.filter(d => d.type === 'subscription').sort((a,b) => b.id.localeCompare(a.id))); 
@@ -432,18 +445,53 @@
       // --- HESAPLAMALAR ---
       const sortedEntries = useMemo(() => [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)), [entries]);
       const latestEntry = sortedEntries[0];
-      const previousEntry = sortedEntries[1];
+      
+      const portfolioAnalysis = useMemo(() => {
+          if (!latestEntry) return null;
+          const getVal = (dateObj) => {
+              if(!dateObj) return 0;
+              return (dateObj.mmfCurrent||0) + (dateObj.goldCurrent||0) + (dateObj.fxCurrent||0) + (dateObj.stocks||[]).reduce((s, x) => s + (x.current||0), 0) + (dateObj.emergencyFund||0);
+          };
+          
+          const currentTotal = getVal(latestEntry);
+          
+          // Aylık Kazanç (Yaklaşık 30 gün önceki kayıt)
+          const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const monthlyEntry = sortedEntries.find(e => new Date(e.date) <= thirtyDaysAgo) || sortedEntries[sortedEntries.length-1];
+          const monthlyProfit = currentTotal - getVal(monthlyEntry);
+          
+          // Yıllık Kazanç (Yaklaşık 365 gün önceki kayıt)
+          const yearAgo = new Date(); yearAgo.setDate(yearAgo.getDate() - 365);
+          const yearlyEntry = sortedEntries.find(e => new Date(e.date) <= yearAgo) || sortedEntries[sortedEntries.length-1];
+          const yearlyProfit = currentTotal - getVal(yearlyEntry);
 
-      // BÜTÇE, MAAŞ, ABONELİK VE BORÇ MAHSUPLAŞMASI (AKILLI MOTOR)
+          return { monthlyProfit, yearlyProfit };
+      }, [sortedEntries, latestEntry]);
+
+      // BÜTÇE, MAAŞ, ABONELİK VE BORÇ MAHSUPLAŞMASI (AKILLI MOTOR - GÜNCELLENDİ)
       const budgetStats = useMemo(() => {
           const latestSalary = salaries[0];
           if (!latestSalary) return null;
 
+          const daysSinceSal = Math.max(1, Math.floor((new Date() - new Date(latestSalary.date)) / (1000 * 60 * 60 * 24)));
+          const weeksSinceSal = Math.max(1, Math.floor(daysSinceSal / 7));
+
           const currentExpenses = expenses.filter(ex => new Date(ex.date) >= new Date(latestSalary.date));
-          const totalExpenseAmount = currentExpenses.reduce((s, ex) => s + (ex.amount || 0), 0);
+          
+          // Otomatik Artan Harcama (Günlük/Haftalık) Çarpanı
+          let totalExpenseAmount = 0;
+          currentExpenses.forEach(ex => {
+              let mult = 1;
+              if(ex.frequency === 'daily') mult = daysSinceSal;
+              else if(ex.frequency === 'weekly') mult = weeksSinceSal;
+              totalExpenseAmount += (ex.amount * mult);
+          });
           
           const expenseCategoryData = Object.entries(
-              currentExpenses.reduce((acc, ex) => { acc[ex.category || 'Diğer'] = (acc[ex.category || 'Diğer'] || 0) + ex.amount; return acc; }, {})
+              currentExpenses.reduce((acc, ex) => { 
+                  let mult = 1; if(ex.frequency === 'daily') mult = daysSinceSal; else if(ex.frequency === 'weekly') mult = weeksSinceSal;
+                  acc[ex.category || 'Diğer'] = (acc[ex.category || 'Diğer'] || 0) + (ex.amount * mult); return acc; 
+              }, {})
           ).map(([name, value]) => ({ name, value }));
 
           const activeLoans = debts.filter(d => d.debtType === 'loan' && (d.paidInstallments || 0) < (d.totalInstallments || 0));
@@ -451,16 +499,15 @@
           const totalDebtPayments = [...activeLoans, ...activeCards].reduce((sum, d) => sum + (d.monthlyPayment || 0), 0);
           const totalSubPayments = subscriptions.reduce((sum, sub) => sum + (sub.price || 0), 0);
 
-          // ERP MANTIĞI: Yemek ve Yol "Yan Hak" olduğu için asıl maaş kasasına GİRMEZ.
-          const coreSalary = (latestSalary.aliSalary || 0) + (latestSalary.aleynaSalary || 0);
+          // ERP MANTIĞI: Yemek ve Yol "Yan Hak" olduğu için asıl maaş kasasına GİRMEZ. Devreden bakiye dahil edilir.
+          const coreSalary = (latestSalary.aliSalary || 0) + (latestSalary.aleynaSalary || 0) + (latestSalary.rollover || 0);
           const totalFixedExpenses = totalDebtPayments + totalSubPayments;
           const remainingSalary = coreSalary - totalExpenseAmount - totalFixedExpenses;
 
-          // Ana Sayfa Bütçe Grafiği Datası
           const budgetChartData = [
               { name: 'Kalan Nakit', value: Math.max(0, remainingSalary), color: '#10b981' },
               { name: 'Sabit Yük (Borç+Abonelik)', value: totalFixedExpenses, color: '#f59e0b' },
-              { name: 'Değişken Harcamalar', value: totalExpenseAmount, color: '#ec4899' }
+              { name: 'Harcamalar', value: totalExpenseAmount, color: '#ec4899' }
           ];
 
           const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
@@ -504,8 +551,8 @@
       }, [sortedEntries]);
 
       // Çeyiz, Ev, Medya & Dilek Grafikleri İçin Data
-      const dowrySpent = dowryItems.filter(d => d.status === 'alindi').reduce((s, d) => s + (d.price || 0), 0);
-      const dowryPending = dowryItems.filter(d => d.status === 'alinacak').reduce((s, d) => s + (d.price || 0), 0);
+      const dowrySpent = dowryItems.filter(d => d.status === 'alindi').reduce((s, d) => s + (d.price * (d.qty || 1)), 0);
+      const dowryPending = dowryItems.filter(d => d.status === 'alinacak').reduce((s, d) => s + (d.price * (d.qty || 1)), 0);
       const dowryChartData = [{ name: 'Alındı', value: dowrySpent }, { name: 'Alınacak', value: dowryPending }];
       
       const houseChartData = useMemo(() => houses.slice(0, 5).map(h => ({ name: h.title.length > 10 ? h.title.substring(0, 10)+'..' : h.title, Fiyat: h.price, Puan: h.rating })), [houses]);
@@ -524,7 +571,6 @@
           const pending = wishlist.filter(w => w.status === 'bekliyor').length;
           return [{ name: 'Gerçekleşen', value: completed }, { name: 'Hedefte', value: pending }];
       }, [wishlist]);
-
 
       const handleExportCSV = () => {
         if(sortedEntries.length === 0) return showToast("Dışa aktarılacak veri bulunamadı.", "warning");
@@ -562,17 +608,11 @@
         const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
         const totalPassiveIncome = entries.reduce((sum, e) => sum + (e.passiveIncome || 0), 0);
         
-        let weeklyChangeTry = 0;
-        if (previousEntry) {
-          const prevCurrent = (previousEntry.mmfCurrent || 0) + (previousEntry.goldCurrent || 0) + (previousEntry.fxCurrent || 0) + (previousEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0) + (previousEntry.emergencyFund || 0);
-          weeklyChangeTry = totalCurrent - prevCurrent;
-        }
-
         const mmfRatio = totalCurrent > 0 ? ((latestEntry.mmfCurrent || 0) / totalCurrent) * 100 : 0;
         const goldRatio = totalCurrent > 0 ? ((latestEntry.goldCurrent || 0) / totalCurrent) * 100 : 0;
         const fxRatio = totalCurrent > 0 ? ((latestEntry.fxCurrent || 0) / totalCurrent) * 100 : 0;
         const stockRatio = totalCurrent > 0 ? (((latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0)) / totalCurrent) * 100 : 0;
-        return { totalInvested, totalCurrent, totalProfit, totalProfitPercent, weeklyChangeTry, mmfRatio, goldRatio, fxRatio, stockRatio, totalPassiveIncome };
+        return { totalInvested, totalCurrent, totalProfit, totalProfitPercent, mmfRatio, goldRatio, fxRatio, stockRatio, totalPassiveIncome };
       };
       const stats = getStats();
 
@@ -596,6 +636,22 @@
       const handleRemoveStock = (id) => setStocks(stocks.filter(s => s.id !== id));
       const handleStockChange = (id, field, value) => setStocks(stocks.map(s => s.id === id ? { ...s, [field]: value } : s));
 
+      const handleAutoAllocate = () => {
+          const total = parseCurrency(autoAllocCap);
+          if (total <= 0) return;
+          const sumPct = Number(pMmf) + Number(pGold) + Number(pFx) + Number(pStock);
+          if (sumPct !== 100) { showToast("Yüzdeler toplamı 100 olmalıdır!", "warning"); return; }
+          
+          setMmfInvested(String((total * pMmf / 100)).replace('.', ','));
+          setGoldInvested(String((total * pGold / 100)).replace('.', ','));
+          setFxInvested(String((total * pFx / 100)).replace('.', ','));
+          
+          if(stocks.length === 0) setStocks([{ id: Date.now(), name: 'Otomatik Hisse', invested: String((total * pStock / 100)).replace('.', ','), current: '' }]);
+          else setStocks(stocks.map((s, idx) => idx === 0 ? { ...s, invested: String((total * pStock / 100)).replace('.', ',') } : s));
+          
+          showToast("Ana para başarıyla dağıtıldı 🚀", "success");
+      };
+
       const handleEditEntry = (entry) => {
         setDate(entry.date);
         setMmfInvested(entry.mmfInvested ? String(entry.mmfInvested).replace('.', ',') : ''); setMmfCurrent(entry.mmfCurrent ? String(entry.mmfCurrent).replace('.', ',') : '');
@@ -616,7 +672,7 @@
           fxInvested: parseCurrency(fxInvested), fxCurrent: parseCurrency(fxCurrent), emergencyFund: parseCurrency(emergencyFund), passiveIncome: parseCurrency(passiveIncome),
           stocks: stocks.map(s => ({ ...s, name: s.name || 'İsimsiz Hisse', invested: parseCurrency(s.invested), current: parseCurrency(s.current) }))
         };
-        const success = await saveToFirebase(docIdToSave, payload, isAleyna ? "Kayıt başarıyla eklendi güzelim! 💖" : "Haftalık değerlendirme başarıyla kaydedildi! 🚀", "Portföy Kayıt Hatası");
+        const success = await saveToFirebase(docIdToSave, payload, isAleyna ? "Kayıt başarıyla eklendi güzelim! 💖" : "Değerlendirme başarıyla kaydedildi! 🚀", "Portföy Kayıt Hatası");
         if(success) {
             setActiveTab('dashboard');
             setMmfInvested(''); setMmfCurrent(''); setGoldInvested(''); setGoldCurrent(''); setFxInvested(''); setFxCurrent(''); setPassiveIncome(''); setEmergencyFund(''); setStocks([]);
@@ -624,39 +680,52 @@
         setIsSavingAction(false);
       };
 
-      // --- BÜTÇE & TARİH KAYIT FONKSİYONLARI ---
-      const handleSaveSettings = async (e) => {
-        e.preventDefault(); if(!user) return; setIsSavingAction(true);
-        const payload = { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) };
-        await saveToFirebase('settings', payload, isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları güncellendi.", "Ayar Hatası");
-        setIsSavingAction(false);
+      const handleEditSalary = (sal) => {
+          setSalaryDate(sal.date);
+          setAliSalary(sal.aliSalary ? String(sal.aliSalary).replace('.', ',') : '');
+          setAleynaSalary(sal.aleynaSalary ? String(sal.aleynaSalary).replace('.', ',') : '');
+          setRolloverSalary(sal.rollover ? String(sal.rollover).replace('.', ',') : '');
+          setAliFood(sal.aliFood ? String(sal.aliFood).replace('.', ',') : '');
+          setAleynaFood(sal.aleynaFood ? String(sal.aleynaFood).replace('.', ',') : '');
+          setAliTransport(sal.aliTransport ? String(sal.aliTransport).replace('.', ',') : '');
+          setAleynaTransport(sal.aleynaTransport ? String(sal.aleynaTransport).replace('.', ',') : '');
+          showToast("Maaş düzenleme açıldı.", "success");
       };
 
       const handleSaveSalary = async (e) => {
         e.preventDefault(); if(!user) return; setIsSavingAction(true);
-        const id = 'sal_' + Date.now();
-        const coreSal = parseCurrency(aliSalary) + parseCurrency(aleynaSalary);
+        const existingSal = salaries.find(ev => ev.date === salaryDate);
+        const id = existingSal ? existingSal.id : 'sal_' + Date.now();
+        
+        const coreSal = parseCurrency(aliSalary) + parseCurrency(aleynaSalary) + parseCurrency(rolloverSalary);
         const extraSal = parseCurrency(aliFood) + parseCurrency(aleynaFood) + parseCurrency(aliTransport) + parseCurrency(aleynaTransport);
         
         const payload = { 
-            id, type: 'salary', date: new Date().toISOString().split('T')[0],
-            aliSalary: parseCurrency(aliSalary), aleynaSalary: parseCurrency(aleynaSalary),
+            id, type: 'salary', date: salaryDate,
+            aliSalary: parseCurrency(aliSalary), aleynaSalary: parseCurrency(aleynaSalary), rollover: parseCurrency(rolloverSalary),
             aliFood: parseCurrency(aliFood), aleynaFood: parseCurrency(aleynaFood),
             aliTransport: parseCurrency(aliTransport), aleynaTransport: parseCurrency(aleynaTransport),
             totalAmount: coreSal + extraSal, coreSalary: coreSal
         };
         
-        const success = await saveToFirebase(id, payload, isAleyna ? "Maaşlarımız bereketli olsun canım! 💰" : "Yeni maaş dönemi başarıyla başlatıldı.", "Maaş Kayıt Hatası");
-        if(success) { setAliSalary(''); setAleynaSalary(''); setAliFood(''); setAleynaFood(''); setAliTransport(''); setAleynaTransport(''); }
+        const success = await saveToFirebase(id, payload, isAleyna ? "Maaşlarımız bereketli olsun canım! 💰" : "Maaş dönemi başarıyla kaydedildi.", "Maaş Kayıt Hatası");
+        if(success) { setAliSalary(''); setAleynaSalary(''); setRolloverSalary(''); setAliFood(''); setAleynaFood(''); setAliTransport(''); setAleynaTransport(''); }
         setIsSavingAction(false);
       };
 
       const handleSaveExpense = async (e) => {
         e.preventDefault(); if(!user) return; setIsSavingAction(true);
         const id = 'exp_' + Date.now();
-        const payload = { id, type: 'expense', name: expenseName, category: expenseCat, amount: parseCurrency(expenseAmount), date: new Date().toISOString().split('T')[0], owner: expenseOwner };
+        const payload = { id, type: 'expense', name: expenseName, category: expenseCat, frequency: expenseFreq, amount: parseCurrency(expenseAmount), date: new Date().toISOString().split('T')[0], owner: expenseOwner };
         const success = await saveToFirebase(id, payload, isAleyna ? "Harcama listeye eklendi tatlım 📝" : "Gider başarıyla işlendi.", "Harcama Hatası");
         if(success) { setExpenseName(''); setExpenseAmount(''); }
+        setIsSavingAction(false);
+      };
+
+      const handleSaveSettings = async (e) => {
+        e.preventDefault(); if(!user) return; setIsSavingAction(true);
+        const payload = { id: 'settings', type: 'settings', engagementDate: engDateInput, marriageDate: marDateInput, targetAmount: parseCurrency(targetAmountInput) };
+        await saveToFirebase('settings', payload, isAleyna ? "Ayarlarımız kaydedildi aşkım 💖" : "Sistem ayarları güncellendi.", "Ayar Hatası");
         setIsSavingAction(false);
       };
 
@@ -716,18 +785,18 @@
       const handleSaveDowry = async (e) => {
           e.preventDefault(); if(!user) return; setIsSavingAction(true);
           const id = 'dowry_' + Date.now();
-          const payload = { id, type: 'dowry', name: dName, price: parseCurrency(dPrice), status: dStatus, date: new Date().toISOString() };
+          const payload = { id, type: 'dowry', name: dName, brand: dBrand, qty: Number(dQty)||1, price: parseCurrency(dPrice), status: dStatus, date: new Date().toISOString() };
           const success = await saveToFirebase(id, payload, isAleyna ? "Çeyiz listemize eklendi tatlım 🎁" : "Çeyiz ürünü kaydedildi.", "Çeyiz Hatası");
-          if(success) { setDName(''); setDPrice(''); }
+          if(success) { setDName(''); setDBrand(''); setDPrice(''); setDQty('1'); }
           setIsSavingAction(false);
       };
 
       const handleSaveMedia = async (e) => {
           e.preventDefault(); if(!user) return; setIsSavingAction(true);
           const id = 'media_' + Date.now();
-          const payload = { id, type: 'media', title: mTitle, mediaType: mType, status: mStatus, date: new Date().toISOString() };
+          const payload = { id, type: 'media', title: mTitle, mediaType: mType, seriesCount: Number(mSeries)||1, status: mStatus, date: new Date().toISOString() };
           const success = await saveToFirebase(id, payload, isAleyna ? "Listeye eklendi! Beraber bakarız 🍿💖" : "Kayıt eklendi.", "Medya Hatası");
-          if(success) { setMTitle(''); }
+          if(success) { setMTitle(''); setMSeries('1'); }
           setIsSavingAction(false);
       };
 
@@ -884,6 +953,7 @@
 
           <main className="p-4 md:p-6 space-y-6 relative z-10">
             
+            {/* --- DASHBOARD TAB --- */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6 pb-6 animate-fade-in relative">
                 
@@ -897,6 +967,7 @@
                     </div>
                 )}
 
+                {/* HIZLI İŞLEMLER */}
                 <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-5 flex items-center justify-between`}>
                     <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${isAleyna ? 'bg-pink-100 text-pink-600' : 'bg-indigo-100 text-indigo-600'}`}>
@@ -981,30 +1052,30 @@
                    )}
                 </div>
 
-                {/* YENİ: BÜTÇE / NAKİT AKIŞI (PIE) */}
-                {window.Recharts && budgetStats && (
+                {/* GRAFİKLER BÖLÜMÜ 1: BÜTÇE VE DİLEKLER */}
+                {window.Recharts && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Bütçe Pasta Grafiği */}
-                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col`}>
-                            <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Net Maaş Dağılımı
-                            </h3>
-                            <div className="flex-1 w-full mt-2 min-h-[180px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={budgetStats.budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2}>
-                                            {budgetStats.budgetChartData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                        <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                        {budgetStats && (
+                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col`}>
+                                <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Net Maaş Dağılımı
+                                </h3>
+                                <div className="flex-1 w-full mt-2 min-h-[180px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={budgetStats.budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2}>
+                                                {budgetStats.budgetChartData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
+                                            <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Dilekler Pasta Grafiği */}
                         {wishlistStatsData.some(w => w.value > 0) && (
                             <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col`}>
                                 <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
@@ -1027,78 +1098,89 @@
                     </div>
                 )}
 
-                {/* MODÜL ÖZET GRAFİKLERİ (DESTEKLİ GÖRÜNÜM) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* ÇEYİZ GRAFİĞİ */}
-                    {window.Recharts && (dowrySpent > 0 || dowryPending > 0) && (
-                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
-                            <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-                                <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Bütçesi
-                            </h3>
-                            <div className="h-32 w-full relative z-10">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2}>
-                                            <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
-                                            <Cell fill="#e2e8f0" />
-                                        </Pie>
-                                        <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                                    </PieChart>
-                                </ResponsiveContainer>
+                {/* GRAFİKLER BÖLÜMÜ 2: ÇEYİZ, EV, KÜLTÜR SANAT */}
+                {window.Recharts && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {(dowrySpent > 0 || dowryPending > 0) && (
+                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
+                                <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                                    <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Bütçesi
+                                </h3>
+                                <div className="h-32 w-full relative z-10">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2}>
+                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
+                                                <Cell fill="#e2e8f0" />
+                                            </Pie>
+                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex justify-between text-[11px] font-bold px-1 relative z-10 mt-4">
+                                    <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
+                                    <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between text-[11px] font-bold px-1 relative z-10 mt-4">
-                                <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
-                                <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* MEDYA GRAFİĞİ (YIĞIN BAR CHART) */}
-                    {window.Recharts && mediaStatsData.some(m => m.Biten > 0 || m.Bekleyen > 0) && (
-                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative col-span-1 md:col-span-2`}>
-                            <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                <i className={`fa-solid fa-film ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kültür & Sanat İstatistikleri
-                            </h3>
-                            <div className="h-40 w-full relative z-10 mt-4">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:20, left:-20, bottom:0}}>
-                                        <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 'bold', fill: '#64748b'}} />
-                                        <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                                        <Legend iconType="circle" wrapperStyle={{fontSize: '10px', marginTop: '10px'}} />
-                                        <Bar dataKey="Biten" name="Tamamlandı" stackId="a" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="Bekleyen" name="Listede" stackId="a" fill="#e2e8f0" radius={[0, 4, 4, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                        {houseChartData.length > 0 && (
+                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative col-span-1 md:col-span-2`}>
+                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kiralık Ev Endeksi
+                                </h3>
+                                <div className="h-40 w-full relative z-10 mt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={houseChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
+                                            <Tooltip 
+                                                formatter={(val, name) => [name === 'Fiyat' ? formatCurrency(val) : val, name]} 
+                                                cursor={{fill: '#f8fafc'}} 
+                                                contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                                            />
+                                            <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} barSize={30} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* EV ADAYLARI GRAFİĞİ */}
-                    {window.Recharts && houseChartData.length > 0 && (
-                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative col-span-1 md:col-span-3`}>
-                            <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kiralık Ev Endeksi
-                            </h3>
-                            <div className="h-48 w-full relative z-10 mt-4">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={houseChartData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
-                                        <Tooltip 
-                                            formatter={(val, name) => [name === 'Fiyat' ? formatCurrency(val) : val, name]} 
-                                            cursor={{fill: '#f8fafc'}} 
-                                            contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                                        />
-                                        <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} barSize={30} />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                        {mediaStatsData.some(m => m.Biten > 0 || m.Bekleyen > 0) && (
+                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative col-span-1 md:col-span-3`}>
+                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-film ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kültür & Sanat İstatistikleri
+                                </h3>
+                                <div className="h-40 w-full relative z-10 mt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:20, left:-20, bottom:0}}>
+                                            <XAxis type="number" hide />
+                                            <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 'bold', fill: '#64748b'}} />
+                                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                            <Legend iconType="circle" wrapperStyle={{fontSize: '10px', marginTop: '10px'}} />
+                                            <Bar dataKey="Biten" name="Tamamlandı" stackId="a" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 0, 0, 0]} />
+                                            <Bar dataKey="Bekleyen" name="Listede" stackId="a" fill="#e2e8f0" radius={[0, 4, 4, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
-                {!stats ? null : (
+                {/* PORTFÖY VE YATIRIM ÖZETİ */}
+                {!stats ? (
+                  <div className={`bg-white p-10 text-center rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} flex flex-col items-center relative overflow-hidden`}>
+                    <div className={`w-24 h-24 ${isAleyna ? 'bg-pink-50 text-pink-400' : 'bg-slate-50 text-slate-300'} rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner`}>
+                      <i className={`fa-solid ${isAleyna ? 'fa-cat' : 'fa-vault'}`}></i>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Portföyünüz Boş</h3>
+                    <p className="text-slate-500 mt-2 font-medium">Büyük yolculuklar tek bir adımla başlar. İlk aylık ve haftalık yatırımınızı girerek serüveni başlatın.</p>
+                    <button onClick={() => setActiveTab('add')} className={`mt-8 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'} cute-bounce text-white px-8 py-4 rounded-2xl font-bold transition shadow-xl active:scale-95 flex items-center gap-2`}>
+                      İlk Kaydı Oluştur {isAleyna && <span>✨</span>}
+                    </button>
+                  </div>
+                ) : (
                   <>
                     {/* PORTFÖY HEDEFİ */}
                     {targetAmount > 0 && (
@@ -1153,7 +1235,7 @@
                         </button>
                       </div>
                       
-                      <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+                      <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
                         <div>
                           <p className="text-white/60 text-xs font-bold uppercase mb-1">Toplam Yatırılan</p>
                           <p className="text-xl font-bold">{formatCurrency(stats.totalInvested)}</p>
@@ -1165,7 +1247,13 @@
                             {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
                           </p>
                         </div>
-                        <div className="col-span-2 md:col-span-1">
+                        <div>
+                          <p className="text-white/60 text-xs font-bold uppercase mb-1">Aylık Kazanç</p>
+                          <p className={`text-xl font-bold flex items-center gap-1 ${portfolioAnalysis?.monthlyProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                            {portfolioAnalysis?.monthlyProfit >= 0 ? '+' : ''}{formatCurrency(portfolioAnalysis?.monthlyProfit)}
+                          </p>
+                        </div>
+                        <div>
                           <p className="text-white/60 text-xs font-bold uppercase mb-1 flex items-center gap-1"><i className="fa-solid fa-shield-cat"></i> Acil Durum Fonu</p>
                           <p className="text-xl font-bold text-amber-300">{formatCurrency(latestEntry?.emergencyFund || 0)}</p>
                         </div>
@@ -1174,40 +1262,6 @@
                       <button onClick={() => handleEditEntry(latestEntry)} className={`md:hidden mt-6 w-full cute-bounce py-3 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm font-bold flex items-center justify-center gap-2 backdrop-blur-sm border border-white/20`}>
                           <i className="fa-solid fa-pen-to-square"></i> Son Kaydı Düzenle
                       </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* VARLIK DAĞILIMI */}
-                        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 h-full">
-                            <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
-                                <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Varlık Dağılımı
-                            </h3>
-                            <div className="flex h-4 rounded-full overflow-hidden mb-5 bg-slate-100">
-                                {stats.mmfRatio > 0 && <div style={{width: `${stats.mmfRatio}%`}} className="bg-emerald-500 h-full transition-all"></div>}
-                                {stats.goldRatio > 0 && <div style={{width: `${stats.goldRatio}%`}} className="bg-amber-400 h-full transition-all"></div>}
-                                {stats.fxRatio > 0 && <div style={{width: `${stats.fxRatio}%`}} className="bg-blue-500 h-full transition-all"></div>}
-                                {stats.stockRatio > 0 && <div style={{width: `${stats.stockRatio}%`}} className="bg-rose-500 h-full transition-all"></div>}
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Para Piy.</p><p className="text-sm font-bold text-slate-800">%{stats.mmfRatio.toFixed(1)}</p></div></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Altın Fonu</p><p className="text-sm font-bold text-slate-800">%{stats.goldRatio.toFixed(1)}</p></div></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Döviz</p><p className="text-sm font-bold text-slate-800">%{stats.fxRatio.toFixed(1)}</p></div></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500"></div><div><p className="text-[10px] font-bold text-slate-400 uppercase">Hisse</p><p className="text-sm font-bold text-slate-800">%{stats.stockRatio.toFixed(1)}</p></div></div>
-                            </div>
-                        </div>
-
-                        {/* PASİF GELİR */}
-                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-100' : 'from-emerald-50 to-teal-50 border-emerald-100'} rounded-[2rem] p-6 shadow-sm border h-full flex flex-col justify-center relative overflow-hidden`}>
-                            {isAleyna && <span className="absolute -right-4 -bottom-4 text-6xl opacity-10">🐱</span>}
-                            <i className={`fa-solid fa-hand-holding-dollar absolute -right-2 -bottom-2 text-[80px] ${isAleyna ? 'text-pink-500/10' : 'text-emerald-500/10'} transform -rotate-12`}></i>
-                            <p className={`${isAleyna ? 'text-pink-600' : 'text-emerald-700'} text-xs font-bold tracking-widest uppercase mb-2 flex items-center gap-2`}>
-                                Toplam Pasif Gelir / Temettü {isAleyna && <span className="text-lg">💖</span>}
-                            </p>
-                            <h2 className={`text-4xl font-black ${isAleyna ? 'text-pink-700' : 'text-emerald-800'} tracking-tighter`}>
-                                {formatCurrency(stats.totalPassiveIncome)}
-                            </h2>
-                            <p className={`mt-3 text-xs font-medium ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}>* Yatırımlarınızın size çalışarak kazandırdığı toplam nakit tutardır.</p>
-                        </div>
                     </div>
 
                     {window.Recharts && chartData.length > 0 && (
@@ -1249,14 +1303,22 @@
               <div className="space-y-6 pb-6 animate-fade-in relative">
                   
                   <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                          <i className={`fa-solid fa-money-bill-wave ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Detaylı Maaş & Yan Hak Girişi
-                      </h2>
-                      <p className="text-slate-500 text-sm mb-6 font-medium">Bütçeniz sadece <b>Ana Maaşlar</b> üzerinden hesaplanır. Yemek ve Yol ücretleri bağımsız takip edilir.</p>
+                      <div className="flex justify-between items-center mb-6">
+                          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                              <i className={`fa-solid fa-money-bill-wave ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Bütçe & Maaş Girişi
+                          </h2>
+                          <button onClick={() => { if(salaries.length > 0) handleEditSalary(salaries[0]); }} className={`text-xs font-bold px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition text-slate-600`}><i className="fa-solid fa-pen"></i> Son Maaşı Düzenle</button>
+                      </div>
+                      <p className="text-slate-500 text-sm mb-6 font-medium">Bütçeniz sadece <b>Ana Maaşlar</b> ve Devreden üzerinden hesaplanır. Yemek ve Yol ücretleri bağımsız takip edilir.</p>
                       
                       <form onSubmit={handleSaveSalary} className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                              <h3 className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b border-slate-200 pb-2">Ana Maaşlar (Çekirdek Bütçe)</h3>
+                          <div className="space-y-2 mb-4">
+                            <label className="text-xs font-bold text-slate-400 uppercase ml-2">Maaş / Bütçe Dönemi Tarihi</label>
+                            <input type="date" required value={salaryDate} onChange={(e) => setSalaryDate(e.target.value)} className={`w-full md:w-1/3 px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 outline-none transition font-bold text-slate-700 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-emerald-500/10 focus:border-emerald-500'}`} />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                              <h3 className="col-span-1 md:col-span-3 text-sm font-bold text-slate-800 border-b border-slate-200 pb-2">Ana Bütçe Kasası</h3>
                               <div className="space-y-2">
                                   <label className="text-xs font-bold text-slate-400 uppercase ml-2">Ali Maaş</label>
                                   <CurrencyInput value={aliSalary} onChange={setAliSalary} placeholder="Ali Maaş (TL)" isAleyna={isAleyna} />
@@ -1264,6 +1326,10 @@
                               <div className="space-y-2">
                                   <label className={`text-xs font-bold ${isAleyna ? 'text-pink-400' : 'text-slate-400'} uppercase ml-2`}>Aleyna Maaş {isAleyna && '💖'}</label>
                                   <CurrencyInput value={aleynaSalary} onChange={setAleynaSalary} placeholder="Aleyna Maaş (TL)" isAleyna={isAleyna} />
+                              </div>
+                              <div className="space-y-2">
+                                  <label className="text-xs font-bold text-slate-400 uppercase ml-2">Devreden Bakiye (Geçen Aydan)</label>
+                                  <CurrencyInput value={rolloverSalary} onChange={setRolloverSalary} placeholder="Geçen Aydan Artan (TL)" icon="🔄" isAleyna={isAleyna} />
                               </div>
                           </div>
 
@@ -1286,22 +1352,16 @@
                           </div>
                           
                           <div className={`mt-4 p-4 rounded-xl flex justify-between items-center bg-emerald-50 border border-emerald-100`}>
-                              <span className="font-bold text-emerald-800 uppercase text-sm">Aylık Çekirdek Kasa:</span>
+                              <span className="font-bold text-emerald-800 uppercase text-sm">Toplam Çekirdek Bütçe:</span>
                               <span className={`text-2xl font-black text-emerald-600`}>
-                                  {formatCurrency(parseCurrency(aliSalary) + parseCurrency(aleynaSalary))}
+                                  {formatCurrency(parseCurrency(aliSalary) + parseCurrency(aleynaSalary) + parseCurrency(rolloverSalary))}
                               </span>
                           </div>
 
                           <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-4 rounded-2xl shadow-xl transition flex justify-center items-center gap-2 shrink-0 ${isSavingAction ? 'bg-slate-400' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30')}`}>
-                              {isSavingAction ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check"></i>} Yeni Bütçe Dönemini Başlat
+                              {isSavingAction ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-check"></i>} Bütçeyi Kaydet
                           </button>
                       </form>
-                      
-                      {budgetStats?.latestSalary && (
-                          <p className="text-center text-xs font-bold text-slate-400 mt-4">
-                            Aktif Dönem Başlangıcı: {new Date(budgetStats.latestSalary.date).toLocaleDateString('tr-TR')}
-                          </p>
-                      )}
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1318,10 +1378,10 @@
                                   </select>
                               </div>
                               <div className="flex gap-2">
-                                  <select value={expenseOwner} onChange={(e) => setExpenseOwner(e.target.value)} className={`w-1/3 px-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-xs transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-rose-500/10 focus:border-rose-500'}`}>
-                                      <option value="Ortak">Ortak</option>
-                                      <option value="Ali">Ali</option>
-                                      <option value="Aleyna">Aleyna</option>
+                                  <select value={expenseFreq} onChange={(e) => setExpenseFreq(e.target.value)} className={`w-1/3 px-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-[10px] transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-rose-500/10 focus:border-rose-500'}`}>
+                                      <option value="once">Tek Sefer</option>
+                                      <option value="daily">Günlük (Otm)</option>
+                                      <option value="weekly">Haftalık (Otm)</option>
                                   </select>
                                   <CurrencyInput value={expenseAmount} onChange={setExpenseAmount} placeholder="Tutar" isAleyna={isAleyna} className={isAleyna ? 'focus:border-pink-500' : 'focus:border-rose-500'} />
                                   <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600' : 'bg-slate-900 hover:bg-slate-800')}`}>
@@ -1336,10 +1396,13 @@
                                   <div key={ex.id} className="flex justify-between items-center bg-white border border-slate-100 p-3 rounded-xl hover:bg-slate-50 transition">
                                       <div className="flex flex-col">
                                           <span className="font-bold text-slate-700">{ex.name}</span>
-                                          <span className="text-[10px] text-slate-400">{ex.category} | {ex.owner} | {new Date(ex.date).toLocaleDateString('tr-TR')}</span>
+                                          <span className="text-[10px] text-slate-400">{ex.category} | {ex.frequency === 'daily' ? 'Günlük' : (ex.frequency === 'weekly' ? 'Haftalık' : 'Tek Sefer')}</span>
                                       </div>
                                       <div className="flex items-center gap-4">
-                                          <span className="font-black text-rose-500">-{formatCurrency(ex.amount)}</span>
+                                          <div className="text-right">
+                                              <span className="font-black text-rose-500 block">-{formatCurrency(ex.amount)}</span>
+                                              {ex.frequency !== 'once' && <span className="text-[9px] text-rose-400 font-bold block">(Otm. Artıyor)</span>}
+                                          </div>
                                           <button type="button" onClick={() => handleDeleteDocument(ex.id, 'Harcama silindi.')} className="text-slate-400 hover:text-rose-500 transition p-2"><i className="fa-solid fa-trash-can"></i></button>
                                       </div>
                                   </div>
@@ -1351,7 +1414,7 @@
                       {/* ABONELİKLER */}
                       <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 relative`}>
                           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-4">
-                              <i className={`fa-solid fa-repeat ${isAleyna ? 'text-pink-500' : 'text-blue-500'}`}></i> Abonelik Yöneticisi
+                              <i className={`fa-solid fa-repeat ${isAleyna ? 'text-pink-500' : 'text-blue-500'}`}></i> Abonelikler (Sabit Gider)
                           </h2>
                           <form onSubmit={handleSaveSubscription} className="flex flex-col gap-3 mb-6 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
                               <div className="flex gap-2">
@@ -1384,85 +1447,6 @@
                       </div>
                   </div>
               </div>
-            )}
-
-            {/* --- YENİ MODÜL: DİLEKLER (WISHLIST) --- */}
-            {activeTab === 'wishlist' && (
-                <div className="space-y-6 pb-6 animate-fade-in relative">
-                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
-                            <i className={`fa-solid fa-star ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Dileklerimiz & Hedeflerimiz
-                        </h2>
-                        
-                        <form onSubmit={handleSaveWishlist} className="space-y-4 mb-8 bg-slate-50 p-5 rounded-[1.5rem] border border-slate-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input type="text" required placeholder="Ne istiyoruz? (Örn: Paris Tatili, Dyson)" value={wName} onChange={(e) => setWName(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
-                                <CurrencyInput value={wPrice} onChange={setWPrice} placeholder="Tahmini Fiyat (Opsiyonel)" isAleyna={isAleyna} />
-                                <input type="url" placeholder="İnternet Linki (Opsiyonel)" value={wLink} onChange={(e) => setWLink(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
-                                <div className="flex items-center gap-2 px-2 bg-white rounded-xl border border-slate-200">
-                                    <label className="text-xs font-bold text-slate-500 ml-2">Öncelik:</label>
-                                    <select value={wPriority} onChange={(e) => setWPriority(e.target.value)} className={`flex-1 px-2 py-3 outline-none font-bold text-slate-700 text-sm transition`}>
-                                        <option value="3">🔥 Çok Acil / Çok İstiyoruz</option>
-                                        <option value="2">⭐ Normal / Alınabilir</option>
-                                        <option value="1">💭 Gelecek Hayali / Acelesi Yok</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
-                                <i className="fa-solid fa-wand-magic-sparkles"></i> Dileği Evrene Gönder
-                            </button>
-                        </form>
-
-                        <div className="space-y-4">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Gerçekleşmeyi Bekleyen Hayaller ✨</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {wishlist.filter(w => w.status === 'bekliyor').map(w => (
-                                    <div key={w.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
-                                        <div className="absolute top-4 right-4 flex gap-2">
-                                            <button onClick={() => handleUpdateDocField(w.id, 'status', 'alindi', 'Dilek gerçekleşti! Tebrikler! 🎉')} className={`w-8 h-8 rounded-lg bg-${themeColor}-50 text-${themeColor}-600 hover:bg-${themeColor}-100 transition flex items-center justify-center`}>
-                                                <i className="fa-solid fa-check"></i>
-                                            </button>
-                                            <button onClick={() => handleDeleteDocument(w.id, 'Dilek silindi.')} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-rose-500 transition flex items-center justify-center">
-                                                <i className="fa-solid fa-trash-can"></i>
-                                            </button>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 pr-20 mb-2">{w.name}</h4>
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase ${w.priority === 3 ? 'bg-rose-100 text-rose-600' : (w.priority === 2 ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600')}`}>
-                                                    {w.priority === 3 ? '🔥 Acil' : (w.priority === 2 ? '⭐ Normal' : '💭 Hayal')}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between items-end border-t border-slate-100 pt-4 mt-2">
-                                            <span className={`text-xl font-black text-slate-600`}>{w.price ? formatCurrency(w.price) : '-'}</span>
-                                            {w.link && (
-                                                <a href={w.link} target="_blank" className={`text-xs font-bold bg-${themeColor}-50 text-${themeColor}-700 px-3 py-2 rounded-lg hover:bg-${themeColor}-100 transition`}>
-                                                    İncele <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                                {wishlist.filter(w => w.status === 'bekliyor').length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Dilek listeniz şu an boş.</p>}
-                            </div>
-
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Gerçekleşenler ✅</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {wishlist.filter(w => w.status === 'alindi').map(w => (
-                                    <div key={w.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 opacity-70 flex justify-between items-center">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i className="fa-solid fa-check"></i></div>
-                                            <span className="font-bold text-slate-500 line-through-anim">{w.name}</span>
-                                        </div>
-                                        <button onClick={() => handleDeleteDocument(w.id)} className="text-slate-400 hover:text-rose-500 transition p-2"><i className="fa-solid fa-trash-can"></i></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
             )}
 
             {/* --- BORÇLAR TAB --- */}
@@ -1572,6 +1556,85 @@
                 </div>
             )}
 
+            {/* --- YENİ MODÜL: DİLEKLER (WISHLIST) --- */}
+            {activeTab === 'wishlist' && (
+                <div className="space-y-6 pb-6 animate-fade-in relative">
+                    <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 relative`}>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 mb-6">
+                            <i className={`fa-solid fa-star ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Dileklerimiz & Hedeflerimiz
+                        </h2>
+                        
+                        <form onSubmit={handleSaveWishlist} className="space-y-4 mb-8 bg-slate-50 p-5 rounded-[1.5rem] border border-slate-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="text" required placeholder="Ne istiyoruz? (Örn: Paris Tatili, Dyson)" value={wName} onChange={(e) => setWName(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                <CurrencyInput value={wPrice} onChange={setWPrice} placeholder="Tahmini Fiyat (Opsiyonel)" isAleyna={isAleyna} />
+                                <input type="url" placeholder="İnternet Linki (Opsiyonel)" value={wLink} onChange={(e) => setWLink(e.target.value)} className={`w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                <div className="flex items-center gap-2 px-2 bg-white rounded-xl border border-slate-200">
+                                    <label className="text-xs font-bold text-slate-500 ml-2">Öncelik:</label>
+                                    <select value={wPriority} onChange={(e) => setWPriority(e.target.value)} className={`flex-1 px-2 py-3 outline-none font-bold text-slate-700 text-sm transition`}>
+                                        <option value="3">🔥 Çok Acil / Çok İstiyoruz</option>
+                                        <option value="2">⭐ Normal / Alınabilir</option>
+                                        <option value="1">💭 Gelecek Hayali / Acelesi Yok</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" disabled={isSavingAction} className={`cute-bounce w-full text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
+                                <i className="fa-solid fa-wand-magic-sparkles"></i> Dileği Evrene Gönder
+                            </button>
+                        </form>
+
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Gerçekleşmeyi Bekleyen Hayaller ✨</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {wishlist.filter(w => w.status === 'bekliyor').map(w => (
+                                    <div key={w.id} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition relative flex flex-col justify-between">
+                                        <div className="absolute top-4 right-4 flex gap-2">
+                                            <button onClick={() => handleUpdateDocField(w.id, 'status', 'alindi', 'Dilek gerçekleşti! Tebrikler! 🎉')} className={`w-8 h-8 rounded-lg bg-${themeColor}-50 text-${themeColor}-600 hover:bg-${themeColor}-100 transition flex items-center justify-center`}>
+                                                <i className="fa-solid fa-check"></i>
+                                            </button>
+                                            <button onClick={() => handleDeleteDocument(w.id, 'Dilek silindi.')} className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 hover:text-rose-500 transition flex items-center justify-center">
+                                                <i className="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 pr-20 mb-2">{w.name}</h4>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase ${w.priority === 3 ? 'bg-rose-100 text-rose-600' : (w.priority === 2 ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600')}`}>
+                                                    {w.priority === 3 ? '🔥 Acil' : (w.priority === 2 ? '⭐ Normal' : '💭 Hayal')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-end border-t border-slate-100 pt-4 mt-2">
+                                            <span className={`text-xl font-black text-slate-600`}>{w.price ? formatCurrency(w.price) : '-'}</span>
+                                            {w.link && (
+                                                <a href={w.link} target="_blank" className={`text-xs font-bold bg-${themeColor}-50 text-${themeColor}-700 px-3 py-2 rounded-lg hover:bg-${themeColor}-100 transition`}>
+                                                    İncele <i className="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {wishlist.filter(w => w.status === 'bekliyor').length === 0 && <p className="col-span-full text-sm text-slate-400 italic">Dilek listeniz şu an boş.</p>}
+                            </div>
+
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4 mt-8">Gerçekleşenler ✅</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {wishlist.filter(w => w.status === 'alindi').map(w => (
+                                    <div key={w.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 opacity-70 flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i className="fa-solid fa-check"></i></div>
+                                            <span className="font-bold text-slate-500 line-through-anim">{w.name}</span>
+                                        </div>
+                                        <button onClick={() => handleDeleteDocument(w.id)} className="text-slate-400 hover:text-rose-500 transition p-2"><i className="fa-solid fa-trash-can"></i></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
             {/* --- EV BAKMACA TAB --- */}
             {activeTab === 'houses' && (
                 <div className="space-y-6 pb-6 animate-fade-in relative">
@@ -1645,18 +1708,27 @@
                             <i className={`fa-solid fa-ring ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> {isAleyna ? 'Çeyiz Listemiz 🎁' : 'Eşya & Çeyiz Listesi'}
                         </h2>
                         
-                        <form onSubmit={handleSaveDowry} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
-                            <input type="text" required placeholder="Ürün Adı (Örn: Karaca Tencere Seti)" value={dName} onChange={(e) => setDName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
-                            <div className="md:w-48">
-                                <CurrencyInput value={dPrice} onChange={setDPrice} placeholder="Fiyat" isAleyna={isAleyna} />
+                        <form onSubmit={handleSaveDowry} className="flex flex-col gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
+                            <div className="flex flex-col md:flex-row gap-3">
+                                <input type="text" required placeholder="Ürün Adı (Örn: Tencere Seti)" value={dName} onChange={(e) => setDName(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                <input type="text" placeholder="Marka (Opsiyonel)" value={dBrand} onChange={(e) => setDBrand(e.target.value)} className={`w-full md:w-48 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
                             </div>
-                            <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
-                                <option value="alinacak">Alınacak</option>
-                                <option value="alindi">Alındı ✅</option>
-                            </select>
-                            <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
-                                Ekle
-                            </button>
+                            <div className="flex flex-col md:flex-row gap-3">
+                                <div className="md:w-48">
+                                    <CurrencyInput value={dPrice} onChange={setDPrice} placeholder="Birim Fiyat" isAleyna={isAleyna} />
+                                </div>
+                                <div className="relative md:w-24">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Adet</span>
+                                    <input type="number" min="1" value={dQty} onChange={(e) => setDQty(e.target.value)} className={`w-full pl-12 pr-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                </div>
+                                <select value={dStatus} onChange={(e) => setDStatus(e.target.value)} className={`md:w-40 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
+                                    <option value="alinacak">Alınacak</option>
+                                    <option value="alindi">Alındı ✅</option>
+                                </select>
+                                <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
+                                    Ekle
+                                </button>
+                            </div>
                         </form>
 
                         <div className="space-y-6">
@@ -1666,11 +1738,14 @@
                                     {dowryItems.filter(d => d.status === 'alinacak').map(item => (
                                         <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl hover:border-slate-300 transition">
                                             <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alindi', 'Ürün alındı olarak işaretlendi! 🎉')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center"></button>
-                                                <span className="font-bold text-slate-700">{item.name}</span>
+                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alindi', 'Ürün alındı olarak işaretlendi! 🎉')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 transition flex items-center justify-center shrink-0"></button>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-700">{item.name} {item.qty > 1 && <span className="text-xs text-slate-400">x{item.qty}</span>}</span>
+                                                    {item.brand && <span className="text-[10px] text-slate-400 uppercase tracking-wider">{item.brand}</span>}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <span className="font-black text-slate-500">{formatCurrency(item.price)}</span>
+                                                <span className="font-black text-slate-500">{formatCurrency(item.price * (item.qty||1))}</span>
                                                 <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
                                             </div>
                                         </div>
@@ -1685,11 +1760,14 @@
                                     {dowryItems.filter(d => d.status === 'alindi').map(item => (
                                         <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-xl opacity-70 hover:opacity-100 transition">
                                             <div className="flex items-center gap-3">
-                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alinacak', 'Ürün geri alındı.')} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center"><i className="fa-solid fa-check text-xs"></i></button>
-                                                <span className="font-bold text-slate-500 line-through-anim">{item.name}</span>
+                                                <button onClick={() => handleUpdateDocField(item.id, 'status', 'alinacak', 'Ürün geri alındı.')} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center shrink-0"><i className="fa-solid fa-check text-xs"></i></button>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-500 line-through-anim">{item.name} {item.qty > 1 && <span className="text-xs">x{item.qty}</span>}</span>
+                                                    {item.brand && <span className="text-[10px] text-slate-400 uppercase tracking-wider">{item.brand}</span>}
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <span className="font-black text-emerald-600">{formatCurrency(item.price)}</span>
+                                                <span className="font-black text-emerald-600">{formatCurrency(item.price * (item.qty||1))}</span>
                                                 <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
                                             </div>
                                         </div>
@@ -1710,13 +1788,23 @@
                         </h2>
                         
                         <form onSubmit={handleSaveMedia} className="flex flex-col md:flex-row gap-3 mb-8 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-200">
-                            <input type="text" required placeholder="Film, Kitap, Dizi veya Oyun Adı" value={mTitle} onChange={(e) => setMTitle(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
                             <select value={mType} onChange={(e) => setMType(e.target.value)} className={`md:w-32 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`}>
                                 <option value="film">🎬 Film</option>
                                 <option value="dizi">📺 Dizi</option>
                                 <option value="oyun">🎮 Oyun</option>
                                 <option value="kitap">📚 Kitap</option>
                             </select>
+                            <input type="text" required placeholder="Eser Adı" value={mTitle} onChange={(e) => setMTitle(e.target.value)} className={`flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                            
+                            {(mType === 'dizi' || mType === 'film' || mType === 'kitap') && (
+                                <div className="relative md:w-32">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px] uppercase">
+                                        {mType === 'dizi' ? 'Sezon:' : (mType === 'film' ? 'Seri:' : 'Cilt/Seri:')}
+                                    </span>
+                                    <input type="number" min="1" value={mSeries} onChange={(e) => setMSeries(e.target.value)} className={`w-full pl-14 pr-2 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 text-sm transition focus:ring-4 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
+                                </div>
+                            )}
+
                             <button type="submit" disabled={isSavingAction} className={`cute-bounce text-white font-bold py-3 px-6 rounded-xl transition flex justify-center items-center shrink-0 ${isSavingAction ? 'bg-slate-400' : `bg-${themeColor}-600 hover:bg-${themeColor}-700`}`}>
                                 Raf'a Ekle
                             </button>
@@ -1730,8 +1818,12 @@
                                         <div key={item.id} className="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl hover:border-indigo-300 transition">
                                             <div className="flex items-center gap-3">
                                                 <button onClick={() => handleUpdateDocField(item.id, 'status', 'bitti', 'Tamamlandı olarak işaretlendi! 🍿')} className="w-6 h-6 rounded-md border-2 border-slate-300 hover:border-indigo-500 hover:bg-indigo-50 transition"></button>
-                                                <span className="font-bold text-slate-700">{item.title}</span>
-                                                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md text-slate-500 uppercase">{item.mediaType}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-700">{item.title}</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase">
+                                                        {item.mediaType} {item.seriesCount > 1 && `| ${item.mediaType==='dizi'?'Sezon':'Seri/Cilt'}: ${item.seriesCount}`}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
                                         </div>
@@ -1747,7 +1839,10 @@
                                         <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 p-3 rounded-xl opacity-70">
                                             <div className="flex items-center gap-3">
                                                 <i className="fa-solid fa-check text-emerald-500"></i>
-                                                <span className="font-bold text-slate-500 line-through-anim">{item.title}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-500 line-through-anim">{item.title}</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase">{item.mediaType}</span>
+                                                </div>
                                             </div>
                                             <button type="button" onClick={() => handleDeleteDocument(item.id)} className="text-slate-300 hover:text-rose-500 transition"><i className="fa-solid fa-trash-can"></i></button>
                                         </div>
@@ -1763,9 +1858,28 @@
             {/* --- ADD TAB --- */}
             {activeTab === 'add' && (
               <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 animate-fade-in relative`}>
+                {isAleyna && <span className="absolute top-8 right-8 text-3xl opacity-40 cute-float">🐱</span>}
                 <div className="mb-8">
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">Portföy Oluştur / Düzenle</h2>
                     <p className="text-slate-500 text-sm mt-1 font-medium">Sadece değişen veya yeni olanları doldurabilirsiniz.</p>
+                </div>
+
+                <div className="mb-8 p-5 bg-slate-50 rounded-[1.5rem] border border-slate-200">
+                    <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                        <i className={`fa-solid fa-wand-magic-sparkles ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Akıllı Portföy Dağıtıcı
+                    </h3>
+                    <div className="flex flex-col md:flex-row gap-4 mb-4">
+                        <CurrencyInput value={autoAllocCap} onChange={setAutoAllocCap} placeholder="Dağıtılacak Toplam Ana Para (TL)" className="md:w-1/3" isAleyna={isAleyna} icon="💰" />
+                        <div className="flex-1 flex gap-2 items-center">
+                            <div className="flex-1 relative"><span className="absolute left-2 top-2 text-[10px] font-bold text-slate-400">PPF %</span><input type="number" value={pMmf} onChange={e=>setPMmf(e.target.value)} className="w-full pt-6 pb-2 px-2 rounded-lg border border-slate-200 text-center font-bold text-sm outline-none" /></div>
+                            <div className="flex-1 relative"><span className="absolute left-2 top-2 text-[10px] font-bold text-slate-400">Altın %</span><input type="number" value={pGold} onChange={e=>setPGold(e.target.value)} className="w-full pt-6 pb-2 px-2 rounded-lg border border-slate-200 text-center font-bold text-sm outline-none" /></div>
+                            <div className="flex-1 relative"><span className="absolute left-2 top-2 text-[10px] font-bold text-slate-400">Döviz %</span><input type="number" value={pFx} onChange={e=>setPFx(e.target.value)} className="w-full pt-6 pb-2 px-2 rounded-lg border border-slate-200 text-center font-bold text-sm outline-none" /></div>
+                            <div className="flex-1 relative"><span className="absolute left-2 top-2 text-[10px] font-bold text-slate-400">Hisse %</span><input type="number" value={pStock} onChange={e=>setPStock(e.target.value)} className="w-full pt-6 pb-2 px-2 rounded-lg border border-slate-200 text-center font-bold text-sm outline-none" /></div>
+                        </div>
+                    </div>
+                    <button type="button" onClick={handleAutoAllocate} className={`w-full cute-bounce font-bold py-3 rounded-xl transition text-sm ${isAleyna ? 'bg-pink-100 text-pink-700 hover:bg-pink-200' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}>
+                        Yüzdelere Göre Aşağıya Dağıt
+                    </button>
                 </div>
 
                 <form onSubmit={handleSaveEntry} className="space-y-8 relative z-10">

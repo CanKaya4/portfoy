@@ -255,13 +255,12 @@
 
       if (!isOpen) return null;
 
-       const slides = [
-        "Hoşgeldin gülüm 🌸",
-        "Seni sevdiğimi söylemiş miydim ? ☀️",
-        "İyi ki varsın gülüm 🐱💖",
-        "Seni her şeyinle seviyorum güzelim 💖🏡✨"
+      const slides = [
+        "Dünyanın en güzel nişanlısı gelmiş... 🌸",
+        "Gülüşüyle günüme güneş açtıranım ☀️",
+        "Hoş geldin canımın içi, kedilerin annesi 🐱💖",
+        "Birlikte kuracağımız o güzel geleceğe... 🏡✨"
       ];
-
 
       return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-50 to-rose-100 romantic-screen overflow-hidden px-4">
@@ -288,7 +287,7 @@
       const [isFirebaseReady, setIsFirebaseReady] = useState(!!window.firebaseApp);
       const [user, setUser] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [isSavingAction, setIsSavingAction] = useState(false); // Genel buton koruması
+      const [isSavingAction, setIsSavingAction] = useState(false);
       
       // Veritabanı State'leri
       const [entries, setEntries] = useState([]);
@@ -399,7 +398,6 @@
           const data = snapshot.docs.map(doc => doc.data());
           
           setEntries(data.filter(d => d.type === 'entry'));
-          // ÇÖZÜM: Aynı gün girilen kayıtları ID (Timestamp içerir) üzerinden sıralayarak en son girilenin daima 0. indekste olmasını garantiledik.
           setSalaries(data.filter(d => d.type === 'salary').sort((a,b) => b.id.localeCompare(a.id)));
           setExpenses(data.filter(d => d.type === 'expense').sort((a,b) => b.id.localeCompare(a.id)));
           setDebts(data.filter(d => d.type === 'debt').sort((a,b) => b.id.localeCompare(a.id)));
@@ -453,7 +451,7 @@
           const totalDebtPayments = [...activeLoans, ...activeCards].reduce((sum, d) => sum + (d.monthlyPayment || 0), 0);
           const totalSubPayments = subscriptions.reduce((sum, sub) => sum + (sub.price || 0), 0);
 
-          // ERP MANTIĞI: Yemek ve Yol "Yan Hak" olduğu için asıl maaş kasasına GİRMEZ. Bütçe sadece Ali ve Aleyna'nın "Ana Maaşı" üzerinden döner.
+          // ERP MANTIĞI: Yemek ve Yol "Yan Hak" olduğu için asıl maaş kasasına GİRMEZ.
           const coreSalary = (latestSalary.aliSalary || 0) + (latestSalary.aleynaSalary || 0);
           const totalFixedExpenses = totalDebtPayments + totalSubPayments;
           const remainingSalary = coreSalary - totalExpenseAmount - totalFixedExpenses;
@@ -505,18 +503,57 @@
         });
       }, [sortedEntries]);
 
-      // Çeyiz, Ev & Medya Datası
+      // Çeyiz, Ev, Medya & Dilek Grafikleri İçin Data
       const dowrySpent = dowryItems.filter(d => d.status === 'alindi').reduce((s, d) => s + (d.price || 0), 0);
       const dowryPending = dowryItems.filter(d => d.status === 'alinacak').reduce((s, d) => s + (d.price || 0), 0);
       const dowryChartData = [{ name: 'Alındı', value: dowrySpent }, { name: 'Alınacak', value: dowryPending }];
-      const houseChartData = useMemo(() => houses.slice(0, 5).map(h => ({ name: h.title.length > 10 ? h.title.substring(0, 10)+'..' : h.title, Fiyat: h.price })), [houses]);
+      
+      const houseChartData = useMemo(() => houses.slice(0, 5).map(h => ({ name: h.title.length > 10 ? h.title.substring(0, 10)+'..' : h.title, Fiyat: h.price, Puan: h.rating })), [houses]);
+      
       const mediaStatsData = useMemo(() => {
-          const stats = { film: 0, dizi: 0, oyun: 0, kitap: 0 };
-          mediaItems.filter(m => m.status === 'bitti').forEach(m => { if(stats[m.mediaType] !== undefined) stats[m.mediaType]++; });
-          return [ { name: 'Film', Adet: stats.film }, { name: 'Dizi', Adet: stats.dizi }, { name: 'Oyun', Adet: stats.oyun }, { name: 'Kitap', Adet: stats.kitap } ];
+          const stats = [ { name: 'Film', Biten: 0, Bekleyen: 0 }, { name: 'Dizi', Biten: 0, Bekleyen: 0 }, { name: 'Oyun', Biten: 0, Bekleyen: 0 }, { name: 'Kitap', Biten: 0, Bekleyen: 0 } ];
+          mediaItems.forEach(m => {
+              const cat = stats.find(x => x.name.toLowerCase() === m.mediaType.toLowerCase());
+              if(cat) { if(m.status === 'bitti') cat.Biten++; else cat.Bekleyen++; }
+          });
+          return stats;
       }, [mediaItems]);
 
-      // --- PORTFÖY ÖZETİ ---
+      const wishlistStatsData = useMemo(() => {
+          const completed = wishlist.filter(w => w.status === 'alindi').length;
+          const pending = wishlist.filter(w => w.status === 'bekliyor').length;
+          return [{ name: 'Gerçekleşen', value: completed }, { name: 'Hedefte', value: pending }];
+      }, [wishlist]);
+
+
+      const handleExportCSV = () => {
+        if(sortedEntries.length === 0) return showToast("Dışa aktarılacak veri bulunamadı.", "warning");
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+        csvContent += "Tarih,Dolar Kuru,PPF Yatirilan,PPF Guncel,Altin Yatirilan,Altin Guncel,Doviz Yatirilan,Doviz Guncel,Hisse Yatirilan,Hisse Guncel,Acil Durum Fonu,Aylik Pasif Gelir,Toplam Varlik,Net Kar\n";
+        
+        sortedEntries.forEach(e => {
+            const hInvested = (e.stocks||[]).reduce((s,x) => s + (x.invested||0), 0);
+            const hCurrent = (e.stocks||[]).reduce((s,x) => s + (x.current||0), 0);
+            const totalI = (e.mmfInvested||0) + (e.goldInvested||0) + (e.fxInvested||0) + hInvested + (e.emergencyFund||0);
+            const totalC = (e.mmfCurrent||0) + (e.goldCurrent||0) + (e.fxCurrent||0) + hCurrent + (e.emergencyFund||0);
+            const profit = totalC - totalI;
+            
+            const row = [
+                e.date, e.usdRate || 0, e.mmfInvested||0, e.mmfCurrent||0, e.goldInvested||0, e.goldCurrent||0,
+                e.fxInvested||0, e.fxCurrent||0, hInvested, hCurrent, e.emergencyFund||0, e.passiveIncome||0, totalC, profit
+            ].join(",");
+            csvContent += row + "\n";
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Portfoy_Gecmisi_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(isAleyna ? "Excel başarıyla indirildi tatlım! 📥" : "Veriler Excel(CSV) formatında indirildi.");
+      };
+
       const getStats = () => {
         if (!latestEntry) return null;
         const totalInvested = (latestEntry.mmfInvested || 0) + (latestEntry.goldInvested || 0) + (latestEntry.fxInvested || 0) + (latestEntry.stocks || []).reduce((sum, s) => sum + (s.invested || 0), 0) + (latestEntry.emergencyFund || 0);
@@ -525,11 +562,17 @@
         const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
         const totalPassiveIncome = entries.reduce((sum, e) => sum + (e.passiveIncome || 0), 0);
         
+        let weeklyChangeTry = 0;
+        if (previousEntry) {
+          const prevCurrent = (previousEntry.mmfCurrent || 0) + (previousEntry.goldCurrent || 0) + (previousEntry.fxCurrent || 0) + (previousEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0) + (previousEntry.emergencyFund || 0);
+          weeklyChangeTry = totalCurrent - prevCurrent;
+        }
+
         const mmfRatio = totalCurrent > 0 ? ((latestEntry.mmfCurrent || 0) / totalCurrent) * 100 : 0;
         const goldRatio = totalCurrent > 0 ? ((latestEntry.goldCurrent || 0) / totalCurrent) * 100 : 0;
         const fxRatio = totalCurrent > 0 ? ((latestEntry.fxCurrent || 0) / totalCurrent) * 100 : 0;
         const stockRatio = totalCurrent > 0 ? (((latestEntry.stocks || []).reduce((sum, s) => sum + (s.current || 0), 0)) / totalCurrent) * 100 : 0;
-        return { totalInvested, totalCurrent, totalProfit, totalProfitPercent, mmfRatio, goldRatio, fxRatio, stockRatio, totalPassiveIncome };
+        return { totalInvested, totalCurrent, totalProfit, totalProfitPercent, weeklyChangeTry, mmfRatio, goldRatio, fxRatio, stockRatio, totalPassiveIncome };
       };
       const stats = getStats();
 
@@ -701,9 +744,6 @@
           if(!user) return;
           try { const { db, doc, setDoc } = window.firebaseApp; await setDoc(doc(db, 'portfoy_kayitlari_v2', id), { [field]: value }, { merge: true }); showToast(successMsg || "Güncellendi."); } catch (error) { showToast("Güncellenemedi.", "error"); }
       };
-
-      const handleExportCSV = () => { /* Export logic remains same */ showToast("Excel başarıyla indirildi."); };
-      const showReport = (type) => { /* Report logic remains same */ };
 
       if (!loading && !user) {
         return (
@@ -941,22 +981,128 @@
                    )}
                 </div>
 
-                {!stats ? (
-                  <div className={`bg-white p-10 text-center rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} flex flex-col items-center relative overflow-hidden`}>
-                    {isAleyna && <span className="absolute top-4 right-4 text-3xl opacity-20">🐾</span>}
-                    <div className={`w-24 h-24 ${isAleyna ? 'bg-pink-50 text-pink-400' : 'bg-slate-50 text-slate-300'} rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner`}>
-                      <i className={`fa-solid ${isAleyna ? 'fa-cat' : 'fa-vault'}`}></i>
+                {/* YENİ: BÜTÇE / NAKİT AKIŞI (PIE) */}
+                {window.Recharts && budgetStats && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Bütçe Pasta Grafiği */}
+                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col`}>
+                            <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                <i className={`fa-solid fa-chart-pie ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Net Maaş Dağılımı
+                            </h3>
+                            <div className="flex-1 w-full mt-2 min-h-[180px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={budgetStats.budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2}>
+                                            {budgetStats.budgetChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
+                                        <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Dilekler Pasta Grafiği */}
+                        {wishlistStatsData.some(w => w.value > 0) && (
+                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col`}>
+                                <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                    <i className={`fa-solid fa-star ${isAleyna ? 'text-pink-500' : 'text-amber-400'}`}></i> Dileklerimiz
+                                </h3>
+                                <div className="flex-1 w-full mt-2 min-h-[180px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={wishlistStatsData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2}>
+                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
+                                                <Cell fill="#e2e8f0" />
+                                            </Pie>
+                                            <Tooltip contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
+                                            <Legend iconType="circle" wrapperStyle={{fontSize: '11px', fontWeight: 'bold', color: '#475569'}} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <h3 className="text-2xl font-black text-slate-800 tracking-tight">Portföyünüz Boş</h3>
-                    <p className="text-slate-500 mt-2 font-medium">Büyük yolculuklar tek bir adımla başlar. İlk aylık ve haftalık yatırımınızı girerek serüveni başlatın.</p>
-                    <button onClick={() => setActiveTab('add')} className={`mt-8 ${isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30'} cute-bounce text-white px-8 py-4 rounded-2xl font-bold transition shadow-xl active:scale-95 flex items-center gap-2`}>
-                      İlk Kaydı Oluştur {isAleyna && <span>✨</span>}
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    {targetAmount > 0 && (
+                )}
+
+                {/* MODÜL ÖZET GRAFİKLERİ (DESTEKLİ GÖRÜNÜM) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* ÇEYİZ GRAFİĞİ */}
+                    {window.Recharts && (dowrySpent > 0 || dowryPending > 0) && (
                         <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
+                            <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                                <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Bütçesi
+                            </h3>
+                            <div className="h-32 w-full relative z-10">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2}>
+                                            <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
+                                            <Cell fill="#e2e8f0" />
+                                        </Pie>
+                                        <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="flex justify-between text-[11px] font-bold px-1 relative z-10 mt-4">
+                                <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
+                                <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MEDYA GRAFİĞİ (YIĞIN BAR CHART) */}
+                    {window.Recharts && mediaStatsData.some(m => m.Biten > 0 || m.Bekleyen > 0) && (
+                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative col-span-1 md:col-span-2`}>
+                            <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                <i className={`fa-solid fa-film ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kültür & Sanat İstatistikleri
+                            </h3>
+                            <div className="h-40 w-full relative z-10 mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:20, left:-20, bottom:0}}>
+                                        <XAxis type="number" hide />
+                                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 11, fontWeight: 'bold', fill: '#64748b'}} />
+                                        <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
+                                        <Legend iconType="circle" wrapperStyle={{fontSize: '10px', marginTop: '10px'}} />
+                                        <Bar dataKey="Biten" name="Tamamlandı" stackId="a" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="Bekleyen" name="Listede" stackId="a" fill="#e2e8f0" radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* EV ADAYLARI GRAFİĞİ */}
+                    {window.Recharts && houseChartData.length > 0 && (
+                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative col-span-1 md:col-span-3`}>
+                            <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
+                                <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kiralık Ev Endeksi
+                            </h3>
+                            <div className="h-48 w-full relative z-10 mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={houseChartData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
+                                        <Tooltip 
+                                            formatter={(val, name) => [name === 'Fiyat' ? formatCurrency(val) : val, name]} 
+                                            cursor={{fill: '#f8fafc'}} 
+                                            contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                                        />
+                                        <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} barSize={30} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {!stats ? null : (
+                  <>
+                    {/* PORTFÖY HEDEFİ */}
+                    {targetAmount > 0 && (
+                        <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'}`}>
                             <div className="flex justify-between items-end mb-3 relative z-10">
                                 <div>
                                     <h3 className={`text-base font-extrabold ${isAleyna ? 'text-pink-600' : 'text-indigo-600'} flex items-center gap-2`}>
@@ -1050,95 +1196,49 @@
                             </div>
                         </div>
 
-                        {/* YENİ: BÜTÇE / NAKİT AKIŞI (PIE) */}
-                        {window.Recharts && budgetStats && (
-                            <div className={`bg-white rounded-[2rem] p-6 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative flex flex-col`}>
-                                <h3 className="text-lg font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                    <i className={`fa-solid fa-money-bill-transfer ${isAleyna ? 'text-pink-500' : 'text-emerald-500'}`}></i> Bütçe Dağılımı (Maaş)
-                                </h3>
-                                <div className="flex-1 w-full mt-2 min-h-[150px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={budgetStats.budgetChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={2}>
-                                                {budgetStats.budgetChartData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="grid grid-cols-1 gap-1 mt-2 text-[10px] font-bold text-slate-600">
-                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Kalan Nakit: {formatCurrency(Math.max(0, budgetStats.remainingSalary))}</div>
-                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500"></div> Sabit Yük: {formatCurrency(budgetStats.totalFixedExpenses)}</div>
-                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-pink-500"></div> Harcamalar: {formatCurrency(budgetStats.totalExpenseAmount)}</div>
-                                </div>
-                            </div>
-                        )}
+                        {/* PASİF GELİR */}
+                        <div className={`bg-gradient-to-br ${isAleyna ? 'from-pink-50 to-rose-50 border-pink-100' : 'from-emerald-50 to-teal-50 border-emerald-100'} rounded-[2rem] p-6 shadow-sm border h-full flex flex-col justify-center relative overflow-hidden`}>
+                            {isAleyna && <span className="absolute -right-4 -bottom-4 text-6xl opacity-10">🐱</span>}
+                            <i className={`fa-solid fa-hand-holding-dollar absolute -right-2 -bottom-2 text-[80px] ${isAleyna ? 'text-pink-500/10' : 'text-emerald-500/10'} transform -rotate-12`}></i>
+                            <p className={`${isAleyna ? 'text-pink-600' : 'text-emerald-700'} text-xs font-bold tracking-widest uppercase mb-2 flex items-center gap-2`}>
+                                Toplam Pasif Gelir / Temettü {isAleyna && <span className="text-lg">💖</span>}
+                            </p>
+                            <h2 className={`text-4xl font-black ${isAleyna ? 'text-pink-700' : 'text-emerald-800'} tracking-tighter`}>
+                                {formatCurrency(stats.totalPassiveIncome)}
+                            </h2>
+                            <p className={`mt-3 text-xs font-medium ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}>* Yatırımlarınızın size çalışarak kazandırdığı toplam nakit tutardır.</p>
+                        </div>
                     </div>
 
-                    {/* MODÜL ÖZET GRAFİKLERİ */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* ÇEYİZ GRAFİĞİ */}
-                        {window.Recharts && (dowrySpent > 0 || dowryPending > 0) && (
-                            <div className={`bg-white rounded-3xl p-5 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
-                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                    <i className="fa-solid fa-ring text-amber-400"></i> Çeyiz Durumu
-                                </h3>
-                                <div className="h-32 w-full relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={dowryChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2}>
-                                                <Cell fill={isAleyna ? '#ec4899' : '#10b981'} />
-                                                <Cell fill="#e2e8f0" />
-                                            </Pie>
-                                            <Tooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="flex justify-between text-[10px] font-bold px-1 relative z-10 mt-2">
-                                    <span className={isAleyna ? 'text-pink-600' : 'text-emerald-600'}>Alındı: {formatCurrency(dowrySpent)}</span>
-                                    <span className="text-slate-400">Kalan: {formatCurrency(dowryPending)}</span>
-                                </div>
+                    {window.Recharts && chartData.length > 0 && (
+                        <div className={`bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'}`}>
+                            <h3 className="text-lg font-extrabold text-slate-800 mb-5 flex items-center gap-2">
+                                <i className={`fa-solid fa-chart-area ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Portföy Büyüme Grafiği {isAleyna && <span className="cute-float text-sm">🦋</span>}
+                            </h3>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorVarlik" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={isAleyna ? '#ec4899' : '#6366f1'} stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor={isAleyna ? '#ec4899' : '#6366f1'} stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#94a3b8'}} />
+                                        <YAxis hide={true} domain={['dataMin - 1000', 'auto']} />
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                                            formatter={(value) => formatCurrency(value)}
+                                            labelStyle={{ color: '#64748b', marginBottom: '0.25rem' }}
+                                        />
+                                        <Area type="monotone" name="Toplam Varlık" dataKey="Varlik" stroke={isAleyna ? '#db2777' : '#4f46e5'} strokeWidth={4} fillOpacity={1} fill="url(#colorVarlik)" />
+                                        <Area type="monotone" name="Yatırılan" dataKey="Yatirilan" stroke="#cbd5e1" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
-                        )}
-
-                        {/* EV ADAYLARI GRAFİĞİ */}
-                        {window.Recharts && houseChartData.length > 0 && (
-                            <div className={`bg-white rounded-3xl p-5 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
-                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                    <i className={`fa-solid fa-house ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Ev Endeksi
-                                </h3>
-                                <div className="h-32 w-full relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={houseChartData}>
-                                            <Tooltip formatter={(val) => formatCurrency(val)} cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px'}}/>
-                                            <Bar dataKey="Fiyat" fill={themeHex} radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* MEDYA GRAFİĞİ */}
-                        {window.Recharts && mediaStatsData.some(m => m.Adet > 0) && (
-                            <div className={`bg-white rounded-3xl p-5 shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} relative`}>
-                                <h3 className="text-sm font-extrabold text-slate-800 mb-2 flex items-center gap-2">
-                                    <i className={`fa-solid fa-book-open-reader ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Kültür Sanat
-                                </h3>
-                                <div className="h-32 w-full relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={mediaStatsData} layout="vertical" margin={{top:0, right:10, left:-20, bottom:0}}>
-                                            <XAxis type="number" hide />
-                                            <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} />
-                                            <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '0.5rem', border: 'none', fontSize: '12px'}}/>
-                                            <Bar dataKey="Adet" fill={isAleyna ? '#f472b6' : '#38bdf8'} radius={[0, 4, 4, 0]} barSize={15} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1199,7 +1299,7 @@
                       
                       {budgetStats?.latestSalary && (
                           <p className="text-center text-xs font-bold text-slate-400 mt-4">
-                            Son Güncelleme: {new Date(budgetStats.latestSalary.date).toLocaleDateString('tr-TR')}
+                            Aktif Dönem Başlangıcı: {new Date(budgetStats.latestSalary.date).toLocaleDateString('tr-TR')}
                           </p>
                       )}
                   </div>
@@ -1663,14 +1763,12 @@
             {/* --- ADD TAB --- */}
             {activeTab === 'add' && (
               <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-6 md:p-8 animate-fade-in relative`}>
-                {isAleyna && <span className="absolute top-8 right-8 text-3xl opacity-40 cute-float">🐱</span>}
                 <div className="mb-8">
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Kayıt Oluştur / Düzenle</h2>
-                    <p className="text-slate-500 text-sm mt-1 font-medium">Bu hafta yatırımlarınız nasıl şekillendi? (Sadece değişen veya yeni olanları doldurabilirsiniz)</p>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Portföy Oluştur / Düzenle</h2>
+                    <p className="text-slate-500 text-sm mt-1 font-medium">Sadece değişen veya yeni olanları doldurabilirsiniz.</p>
                 </div>
 
                 <form onSubmit={handleSaveEntry} className="space-y-8 relative z-10">
-                  
                   <div className="space-y-2">
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Değerlendirme Tarihi</label>
                     <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={`w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 outline-none transition font-bold text-slate-700 ${isAleyna ? 'focus:ring-pink-500/10 focus:border-pink-500' : 'focus:ring-indigo-500/10 focus:border-indigo-500'}`} />
@@ -1682,7 +1780,7 @@
                         <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2"><i className={`fa-solid fa-hand-holding-dollar ${isAleyna ? 'text-pink-500' : 'text-emerald-600'}`}></i> Ekstra Gelirler / Acil Durum Fonu</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <CurrencyInput value={passiveIncome} onChange={setPassiveIncome} placeholder="Bu ayki Temettü / Faiz Getirisi" isAleyna={isAleyna} />
-                            <CurrencyInput value={emergencyFund} onChange={setEmergencyFund} placeholder="Acil Durum Fonu (Kenardaki Nakit)" icon="🛡️" isAleyna={isAleyna} />
+                            <CurrencyInput value={emergencyFund} onChange={setEmergencyFund} placeholder="Acil Durum Fonu (Nakit)" icon="🛡️" isAleyna={isAleyna} />
                         </div>
                       </div>
 
@@ -1737,7 +1835,6 @@
                           ))}
                         </div>
                       </div>
-
                   </div>
 
                   <button type="submit" disabled={isSavingAction} className={`w-full cute-bounce text-white font-bold py-5 rounded-2xl shadow-xl transition text-lg flex justify-center items-center gap-2 ${isSavingAction ? 'bg-slate-400 cursor-not-allowed' : (isAleyna ? 'bg-pink-500 hover:bg-pink-600 shadow-pink-500/30' : 'bg-slate-900 hover:bg-slate-800')}`}>
@@ -1751,12 +1848,10 @@
             {/* --- HISTORY TAB --- */}
             {activeTab === 'history' && (
               <div className={`bg-white rounded-[2rem] shadow-sm border ${isAleyna ? 'border-pink-100' : 'border-slate-100'} p-4 md:p-8 animate-fade-in`}>
-                
                 <div className="flex justify-between items-center mb-6 px-1">
                     <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
                         <i className={`fa-solid fa-clock-rotate-left ${isAleyna ? 'text-pink-500' : 'text-indigo-500'}`}></i> Geçmiş Dönemler
                     </h2>
-                    
                     <button onClick={handleExportCSV} className={`cute-bounce px-4 py-2 rounded-xl font-bold text-xs md:text-sm flex items-center gap-2 transition ${isAleyna ? 'bg-pink-100 text-pink-700 hover:bg-pink-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
                         <i className="fa-solid fa-file-excel"></i> <span className="hidden sm:inline">Excel Olarak İndir</span><span className="sm:hidden">İndir</span> {isAleyna && <span>🌸</span>}
                     </button>
@@ -1787,28 +1882,18 @@
                                 {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
                               </p>
                           </div>
-                          
                           <div className="flex items-center gap-1 ml-2">
-                              <button onClick={() => handleEditEntry(entry)} className={`cute-bounce w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm transition ${isAleyna ? 'text-pink-500 hover:bg-pink-50' : 'text-indigo-500 hover:bg-indigo-50'}`}>
-                                <i className="fa-solid fa-pen-to-square"></i>
-                              </button>
-                              
-                              <button onClick={() => handleDeleteDocument(entry.id, 'Geçmiş kayıt silindi.')} className="cute-bounce w-10 h-10 flex items-center justify-center rounded-xl bg-white text-rose-500 border border-slate-200 shadow-sm hover:bg-rose-50 transition">
-                                <i className="fa-solid fa-trash-can"></i>
-                              </button>
+                              <button onClick={() => handleEditEntry(entry)} className={`cute-bounce w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm transition ${isAleyna ? 'text-pink-500 hover:bg-pink-50' : 'text-indigo-500 hover:bg-indigo-50'}`}><i className="fa-solid fa-pen-to-square"></i></button>
+                              <button onClick={() => handleDeleteDocument(entry.id, 'Geçmiş kayıt silindi.')} className="cute-bounce w-10 h-10 flex items-center justify-center rounded-xl bg-white text-rose-500 border border-slate-200 shadow-sm hover:bg-rose-50 transition"><i className="fa-solid fa-trash-can"></i></button>
                           </div>
-
                         </div>
                       </div>
                     );
                   })}
-                  {sortedEntries.length === 0 && (
-                      <p className="text-center text-slate-400 font-medium py-10">Henüz kaydedilmiş bir geçmiş bulunmuyor.</p>
-                  )}
+                  {sortedEntries.length === 0 && <p className="text-center text-slate-400 font-medium py-10">Henüz kaydedilmiş bir geçmiş bulunmuyor.</p>}
                 </div>
               </div>
             )}
-
           </main>
         </div>
       );
